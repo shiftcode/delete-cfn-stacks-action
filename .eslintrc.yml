@@ -1,0 +1,13 @@
+env:
+  es6: true
+  node: true
+extends:
+  - "plugin:@typescript-eslint/eslint-recommended"
+parser: "@typescript-eslint/parser"
+parserOptions:
+  ecmaVersion: 2018
+  sourceType: module
+plugins:
+  - "@typescript-eslint"
+ignorePatterns:
+  - "node_modules/*"

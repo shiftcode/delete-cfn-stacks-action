@@ -1,0 +1,12 @@
+name: 'Delete CloudFormation Stacks'
+description: 'Delete multiple cloudformation stacks by prefix and stage suffix'
+inputs:
+  stackNamePrefix: # id of input
+    description: 'prefix of the stack names to delete'
+    required: true
+outputs:
+  deletedStacks: # id of output
+    description: 'The stacks that were deleted (array of names)'
+runs:
+  using: 'node12'
+  main: 'index.ts'
