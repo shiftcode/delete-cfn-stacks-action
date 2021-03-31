@@ -16,7 +16,7 @@ This action deletes all cloudformation stacks in the provided region with the gi
     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     aws-region: eu-central-1
 - name: Delete Stacks
-  uses: shiftcode/delete-cfn-stack-action@v1
+  uses: shiftcode/delete-cfn-stacks-action@v0.0.1
   with:
-    stack-name-prefix: 'bag-covid19-'
+    stackNamePrefix: 'bag-covid19-'
 ```
