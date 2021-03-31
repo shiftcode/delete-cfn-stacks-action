@@ -8,10 +8,10 @@ import { branchToStageName } from '@shiftcode/build-helper/dist/branch.utils'
 
 export async function run() {
   try {
+    console.debug('github', github.context)
     // reading the inputs (inputs defined in action.yml)
     const stackNamePrefix = core.getInput('stackNamePrefix')
-    console.log('github context', github.context)
-    const stage = branchToStageName(github.context.ref.replace(/^(.+\/)?/, ''))
+    const stage = branchToStageName(github.context.payload.ref.replace(/^(.+\/)?/, ''))
 
     console.log(`using stack name prefix ${stackNamePrefix || '_NOT_DEFINED_'}`)
     console.log(`using stack name suffix ${stage || '_NOT_DEFINED_'}`)
@@ -25,18 +25,18 @@ export async function run() {
         NextToken: nextToken,
         StackStatusFilter: ['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE', 'UPDATE_ROLLBACK_COMPLETE', 'IMPORT_COMPLETE'],
       }).promise()
-      stacks.push(...stackListResponse.StackSummaries)
+      const matchingStacks = stackListResponse.StackSummaries
+        .filter((s) => s.StackName.startsWith(stackNamePrefix) && s.StackName.endsWith(stage))
+      stacks.push(...matchingStacks)
       nextToken = stackListResponse.NextToken
     } while (nextToken)
 
-    const matchingStacks = stacks.filter((s) => s.StackName.startsWith(stackNamePrefix) && s.StackName.endsWith(stage))
-
-    console.log(matchingStacks)
+    console.log('stacks:', stacks)
     // todo: delete the stacks
 
 
     // defining the outputs (outputs defined in action.yml)
-    core.setOutput('deletedStacks', matchingStacks)
+    core.setOutput('deletedStacks', stacks.map((s) => s.StackName))
 
   } catch (error) {
     core.setFailed(error.message)

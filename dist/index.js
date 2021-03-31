@@ -29557,9 +29557,9 @@ const cloudformation_1 = __importDefault(__nccwpck_require__(4643));
 const branch_utils_1 = __nccwpck_require__(6858);
 async function run() {
     try {
+        console.debug('github', github.context);
         const stackNamePrefix = core.getInput('stackNamePrefix');
-        console.log('github context', github.context);
-        const stage = branch_utils_1.branchToStageName(github.context.ref.replace(/^(.+\/)?/, ''));
+        const stage = branch_utils_1.branchToStageName(github.context.payload.ref.replace(/^(.+\/)?/, ''));
         console.log(`using stack name prefix ${stackNamePrefix || '_NOT_DEFINED_'}`);
         console.log(`using stack name suffix ${stage || '_NOT_DEFINED_'}`);
         const cfn = new cloudformation_1.default();
@@ -29570,12 +29570,13 @@ async function run() {
                 NextToken: nextToken,
                 StackStatusFilter: ['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE', 'UPDATE_ROLLBACK_COMPLETE', 'IMPORT_COMPLETE'],
             }).promise();
-            stacks.push(...stackListResponse.StackSummaries);
+            const matchingStacks = stackListResponse.StackSummaries
+                .filter((s) => s.StackName.startsWith(stackNamePrefix) && s.StackName.endsWith(stage));
+            stacks.push(...matchingStacks);
             nextToken = stackListResponse.NextToken;
         } while (nextToken);
-        const matchingStacks = stacks.filter((s) => s.StackName.startsWith(stackNamePrefix) && s.StackName.endsWith(stage));
-        console.log(matchingStacks);
-        core.setOutput('deletedStacks', matchingStacks);
+        console.log('stacks:', stacks);
+        core.setOutput('deletedStacks', stacks.map((s) => s.StackName));
     }
     catch (error) {
         core.setFailed(error.message);
