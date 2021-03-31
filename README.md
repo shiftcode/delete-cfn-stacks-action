@@ -20,3 +20,9 @@ This action deletes all cloudformation stacks in the provided region with the gi
   with:
     stackNamePrefix: 'bag-covid19-'
 ```
+
+## dev
+1) edit
+2) commit
+3) set tag `git tag -a -m "my fancy release" v0.0.1`
+4) push with tags `git push --follow-tags`
