@@ -1,4 +1,5 @@
 import * as core from '@actions/core'
+import * as github from '@actions/github'
 import CloudFormation from 'aws-sdk/clients/cloudformation'
 import { branchToStageName } from '@shiftcode/build-helper/dist/branch.utils'
 
@@ -9,7 +10,8 @@ export async function run() {
   try {
     // reading the inputs (inputs defined in action.yml)
     const stackNamePrefix = core.getInput('stackNamePrefix')
-    const stage = branchToStageName()
+    console.log('github context', github.context)
+    const stage = branchToStageName(github.context.ref.replace(/^(.+\/)?/, ''))
 
     console.log(`using stack name prefix ${stackNamePrefix || '_NOT_DEFINED_'}`)
     console.log(`using stack name suffix ${stage || '_NOT_DEFINED_'}`)

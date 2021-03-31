@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@actions/core": "^1.2.6",
+    "@actions/github": "^4.0.0",
     "@shiftcode/build-helper": "^3.0.1",
     "aws-sdk": "^2.876.0"
   },
