@@ -1,0 +1,9 @@
+{
+  "name": "delete-cfn-stacks-action",
+  "version": "0.0.1",
+  "description": "github workflow action to delete aws cloudformation stacks",
+  "main": "index.js",
+  "repository": "https://github.com/shiftcode/delete-cfn-stacks-action.git",
+  "author": "Simon Mumenthaler <simon.mumenthaler@shiftcode.ch>",
+  "private": true
+}
