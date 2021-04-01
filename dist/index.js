@@ -29533,52 +29533,6 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 5372:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.deleteStacks = void 0;
-async function deleteStacks(cfn, stacksToDelete) {
-    if (stacksToDelete.length === 0) {
-        return;
-    }
-    console.log('delete stacks:', stacksToDelete.map((s) => s.StackName));
-    await Promise.all(stacksToDelete.map(({ StackName }) => cfn.deleteStack({ StackName }).promise()));
-}
-exports.deleteStacks = deleteStacks;
-
-
-/***/ }),
-
-/***/ 892:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fetchAllStacks = void 0;
-async function fetchAllStacks(cfn, stackNamePrefix) {
-    const stacks = [];
-    let nextToken = undefined;
-    do {
-        const stackListResponse = await cfn.listStacks({
-            NextToken: nextToken,
-            StackStatusFilter: ['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE', 'UPDATE_ROLLBACK_COMPLETE', 'IMPORT_COMPLETE'],
-        }).promise();
-        const matchingStacks = stackListResponse.StackSummaries
-            .filter((s) => s.StackName.startsWith(stackNamePrefix));
-        stacks.push(...matchingStacks);
-        nextToken = stackListResponse.NextToken;
-    } while (nextToken);
-    return stacks;
-}
-exports.fetchAllStacks = fetchAllStacks;
-
-
-/***/ }),
-
 /***/ 6144:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -29603,37 +29557,34 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const branch_utils_1 = __nccwpck_require__(4010);
-const cloudformation_1 = __importDefault(__nccwpck_require__(4643));
-const delete_stacks_function_1 = __nccwpck_require__(5372);
-const fetch_all_stacks_function_1 = __nccwpck_require__(892);
+const stack_helper_1 = __nccwpck_require__(6963);
 async function run() {
     try {
         console.debug('github', github.context);
+        const blocking = core.getInput('blocking') === 'true';
         const stackNamePrefix = core.getInput('stackNamePrefix');
         const branchName = branch_utils_1.parseBranchName(github.context.payload.ref.replace(/^(.+\/)?/, ''));
         const xxSuffix = `xx${branchName.branchId}`;
         const prSuffix = `pr${branchName.branchId}`;
         console.log(`provided stack name prefix: ${stackNamePrefix}`);
         console.log(`stage as stack name suffix: ${xxSuffix}|${prSuffix}`);
-        const cfn = new cloudformation_1.default();
-        const stacks = await fetch_all_stacks_function_1.fetchAllStacks(cfn, stackNamePrefix);
-        const xxStacks = stacks.filter((s) => s.StackName.endsWith(xxSuffix));
-        const prStacks = stacks.filter((s) => s.StackName.endsWith(prSuffix));
+        const stackHelper = new stack_helper_1.StackHelper();
+        const stacks = (await stackHelper.listAllStacks(stackNamePrefix))
+            .map((s) => s.StackName);
+        const xxStacks = stacks.filter((stackName) => stackName.endsWith(xxSuffix));
+        const prStacks = stacks.filter((stackName) => stackName.endsWith(prSuffix));
         if (!xxStacks.length && !prStacks.length) {
             console.info('No Stacks to delete');
         }
         else {
             await Promise.all([
-                delete_stacks_function_1.deleteStacks(cfn, xxStacks),
-                delete_stacks_function_1.deleteStacks(cfn, prStacks)
+                stackHelper.deleteStacks(xxStacks, blocking),
+                stackHelper.deleteStacks(prStacks, blocking),
             ]);
         }
         core.setOutput('deletedStacks', [...xxStacks, ...prStacks]);
@@ -29644,6 +29595,97 @@ async function run() {
 }
 exports.run = run;
 run();
+
+
+/***/ }),
+
+/***/ 6963:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.StackHelper = void 0;
+const cloudformation_1 = __importDefault(__nccwpck_require__(4643));
+const timeout_async_1 = __nccwpck_require__(1890);
+class StackHelper {
+    constructor(cfn) {
+        this.cfn = cfn || new cloudformation_1.default();
+    }
+    async listAllStacks(stackNamePrefix) {
+        const stacks = [];
+        let nextToken = undefined;
+        do {
+            const stackListResponse = await this.cfn.listStacks({
+                NextToken: nextToken,
+                StackStatusFilter: ['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE', 'UPDATE_ROLLBACK_COMPLETE', 'IMPORT_COMPLETE'],
+            }).promise();
+            const matchingStacks = stackListResponse.StackSummaries
+                .filter((s) => s.StackName.startsWith(stackNamePrefix));
+            stacks.push(...matchingStacks);
+            nextToken = stackListResponse.NextToken;
+        } while (nextToken);
+        return stacks;
+    }
+    async deleteStacks(stackNames, blocking = false) {
+        if (stackNames.length === 0) {
+            return;
+        }
+        console.log('delete stacks:', stackNames);
+        await Promise.all(stackNames.map((s) => this.deleteStack(s, blocking)));
+    }
+    deleteStack(stackName, blocking = false) {
+        return this.cfn.deleteStack({ StackName: stackName }).promise()
+            .then(() => blocking ? this.getStackUpdateUntilDeleted(stackName) : true);
+    }
+    describeStack(stackName) {
+        return this.cfn.describeStacks({ StackName: stackName }).promise()
+            .then((res) => {
+            const stack = res.Stacks.find((s) => s.StackName === stackName);
+            return stack || null;
+        });
+    }
+    getStackUpdateUntilDeleted(stackName, first = true) {
+        return this.describeStack(stackName)
+            .then((stack) => {
+            switch (stack.StackStatus) {
+                case 'DELETE_COMPLETE':
+                    console.info(`${stack.StackName}: ${stack.StackStatus}`);
+                    return true;
+                case 'DELETE_FAILED':
+                    console.error(`${stack.StackName}: ${stack.StackStatus}`, stack.StackStatusReason);
+                    return false;
+                case 'DELETE_IN_PROGRESS':
+                    if (first) {
+                        console.info(`${stack.StackName}: ${stack.StackStatus}`);
+                    }
+                    return timeout_async_1.timeoutAsync(15)
+                        .then(() => this.getStackUpdateUntilDeleted(stack.StackName, false));
+                default:
+                    throw new Error(`StackStatus of ${stack.StackName} is ${stack.StackStatus} (${stack.StackStatusReason})`);
+            }
+        });
+    }
+}
+exports.StackHelper = StackHelper;
+
+
+/***/ }),
+
+/***/ 1890:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.timeoutAsync = void 0;
+function timeoutAsync(duration) {
+    return new Promise((res) => setTimeout(res, duration));
+}
+exports.timeoutAsync = timeoutAsync;
 
 
 /***/ }),

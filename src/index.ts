@@ -1,14 +1,13 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { parseBranchName } from '@shiftcode/build-helper/branch.utils'
-import CloudFormation from 'aws-sdk/clients/cloudformation'
-import { deleteStacks } from './delete-stacks.function'
-import { fetchAllStacks } from './fetch-all-stacks.function'
+import { StackHelper } from './stack-helper'
 
 export async function run() {
   try {
     console.debug('github', github.context)
     // reading the inputs (inputs defined in action.yml)
+    const blocking = core.getInput('blocking') === 'true'
     const stackNamePrefix = core.getInput('stackNamePrefix')
     const branchName = parseBranchName(github.context.payload.ref.replace(/^(.+\/)?/, ''))
     const xxSuffix = `xx${branchName.branchId}`
@@ -17,18 +16,20 @@ export async function run() {
     console.log(`provided stack name prefix: ${stackNamePrefix}`)
     console.log(`stage as stack name suffix: ${xxSuffix}|${prSuffix}`)
 
-    const cfn = new CloudFormation()
+    const stackHelper = new StackHelper()
 
-    const stacks = await fetchAllStacks(cfn, stackNamePrefix)
-    const xxStacks = stacks.filter((s) => s.StackName.endsWith(xxSuffix))
-    const prStacks = stacks.filter((s) => s.StackName.endsWith(prSuffix))
+    const stacks = (await stackHelper.listAllStacks(stackNamePrefix))
+      .map((s) => s.StackName)
+
+    const xxStacks = stacks.filter((stackName) => stackName.endsWith(xxSuffix))
+    const prStacks = stacks.filter((stackName) => stackName.endsWith(prSuffix))
 
     if (!xxStacks.length && !prStacks.length) {
       console.info('No Stacks to delete')
     } else {
       await Promise.all([
-        deleteStacks(cfn, xxStacks),
-        deleteStacks(cfn, prStacks)
+        stackHelper.deleteStacks(xxStacks, blocking),
+        stackHelper.deleteStacks(prStacks, blocking),
       ])
     }
 

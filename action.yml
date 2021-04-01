@@ -4,6 +4,10 @@ inputs:
   stackNamePrefix: # id of input
     description: 'prefix of the stack names to delete'
     required: true
+  blocking: # id of input
+    description: 'whether or not the action should run until the stack is actually deleted'
+    required: true
+    default: 'false'
 outputs:
   deletedStacks: # id of output
     description: 'The stacks that were deleted (array of names)'

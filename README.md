@@ -8,7 +8,11 @@ Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=t
 ### Inputs
 
 #### `stackNamePrefix`
-**Required** The prefix of the stack names to delete.
+**Required** `string` The prefix of the stack names to delete.
+
+#### `blocking`
+**Optional** `boolean` Whether the action should wait until the stack is actually deleted (status=`DELETE_COMPLETE`).\
+
 
 ### Example workflow step config
 ```
