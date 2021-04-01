@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "skipLibCheck": true,
-    "target": "es2018",
+    "target": "es2019",
     "module": "commonjs",
     "outDir": "./dist",
     "rootDir": "./src",

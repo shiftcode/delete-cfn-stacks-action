@@ -3782,83 +3782,15 @@ exports.getUserAgent = getUserAgent;
 
 /***/ }),
 
-/***/ 6858:
-/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+/***/ 4010:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
-// ESM COMPAT FLAG
-__nccwpck_require__.r(__webpack_exports__);
 
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "branchToStageName": () => /* binding */ branchToStageName,
-  "isMasterBranch": () => /* binding */ isMasterBranch,
-  "isProduction": () => /* binding */ isProduction,
-  "isPullRequest": () => /* binding */ isPullRequest,
-  "parseBranchName": () => /* binding */ parseBranchName,
-  "resolveBranchName": () => /* binding */ resolveBranchName
-});
-
-// EXTERNAL MODULE: external "child_process"
-var external_child_process_ = __nccwpck_require__(3129);
-// CONCATENATED MODULE: ./node_modules/@shiftcode/build-helper/dist/ci.js
-/**
- * @return Returns true if running inside a gitHub workflow
- */
-function isTravis(envVars) {
-    return envVars.TRAVIS === 'true';
-}
-/**
- * @return Returns true if running inside a gitHub workflow
- */
-function isGithubWorkflow(envVars) {
-    return envVars.GITHUB_ACTIONS === 'true';
-}
-function isCI(envVars) {
-    return isTravis(envVars) || isGithubWorkflow(envVars);
-}
-/**
- * @return Returns the name of the trigger which caused a gitHub workflow run
- */
-function getGithubWorkflowTrigger() {
-    const env = process.env;
-    return env.GITHUB_EVENT_NAME; // tslint:disable-line:no-non-null-assertion
-}
-/**
- * @return Returns true if we are running either on travis or gitHub
- */
-function runningOnCI() {
-    const env = process.env;
-    return isTravis(env) || isGithubWorkflow(env);
-}
-/**
- * @return Returns true if not on running on any known CI (travis, gitHub workflow)
- */
-function runningLocal() {
-    return !runningOnCI();
-}
-/**
- * @return Returns true if the travis job was triggered from a PR
- */
-function isPullRequestTravis() {
-    const env = process.env;
-    return isTravis(env) && env.TRAVIS_PULL_REQUEST !== 'false';
-}
-/**
- * @return Returns true if the job was triggered from a PR
- */
-function isPullRequestGithubWorkflow() {
-    const env = process.env;
-    // tslint:disable-next-line:no-non-null-assertion
-    return isGithubWorkflow(env) && env.GITHUB_EVENT_NAME === 'pull_request'; // GITHUB_REF.startsWith('refs/pull/'))
-}
-function isPullRequestCI() {
-    return isPullRequestTravis() || isPullRequestGithubWorkflow();
-}
-//# sourceMappingURL=ci.js.map
-// CONCATENATED MODULE: ./node_modules/@shiftcode/build-helper/dist/branch.utils.js
-
-
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isPullRequest = exports.isProduction = exports.resolveBranchName = exports.parseBranchName = exports.isMasterBranch = exports.branchToStageName = void 0;
+const child_process_1 = __nccwpck_require__(3129);
+const ci_1 = __nccwpck_require__(8239);
 /** regex to match the master branch */
 const REGEX_MASTER = /^master$/;
 /** regex to match our branch conventions with the following capture groups: fullMatch / branch id / branch name */
@@ -3877,7 +3809,7 @@ function branchToStageName(branchName) {
     }
     const { branchId } = parseBranchName(branchName);
     if (branchId) {
-        if (isPullRequestCI()) {
+        if (ci_1.isPullRequestCI()) {
             return `pr${branchId}`;
         }
         else {
@@ -3886,6 +3818,7 @@ function branchToStageName(branchName) {
     }
     throw new Error('branchName does not match our naming convention');
 }
+exports.branchToStageName = branchToStageName;
 /**
  * @return Returns true if the given branch name (if any, otherwise we resolve depending on runtime,
  * see @link resolveBranchName) is the master branch, false otherwise
@@ -3896,11 +3829,12 @@ function branchToStageName(branchName) {
 function isMasterBranch(branchName) {
     branchName = branchName || resolveBranchName();
     const isMaster = REGEX_MASTER.test(branchName);
-    if (isMaster && runningLocal() && process.env[OVERRIDE_FLAG] !== 'true') {
+    if (isMaster && ci_1.runningLocal() && process.env[OVERRIDE_FLAG] !== 'true') {
         throw new Error(`Master branch can't be used local`);
     }
     return isMaster;
 }
+exports.isMasterBranch = isMasterBranch;
 /**
  * @return Returns an object containing branchId and branchName
  * @throws Throws an error if given branchName does not match our convention
@@ -3916,22 +3850,23 @@ function parseBranchName(branchName) {
         throw new Error(`given branch name ${branchName} does not match our convention #<one or more digit>-<branch-name-with-kebap-case>`);
     }
 }
+exports.parseBranchName = parseBranchName;
 /**
  * @return Returns the branch name. The name is resolved depending on environment (travis | github actions | local).
  */
 function resolveBranchName() {
     const ENV = process.env;
     let branchName;
-    if (isTravis(ENV)) {
-        if (isPullRequestTravis()) {
+    if (ci_1.isTravis(ENV)) {
+        if (ci_1.isPullRequestTravis()) {
             branchName = ENV.TRAVIS_PULL_REQUEST_BRANCH; // tslint:disable-line:no-non-null-assertion
         }
         else {
             branchName = ENV.TRAVIS_BRANCH; // tslint:disable-line:no-non-null-assertion
         }
     }
-    else if (isGithubWorkflow(ENV)) {
-        if (isPullRequestGithubWorkflow()) {
+    else if (ci_1.isGithubWorkflow(ENV)) {
+        if (ci_1.isPullRequestGithubWorkflow()) {
             if (!ENV.GITHUB_HEAD_REF) {
                 throw new Error('env var GITHUB_HEAD_REF must be defined');
             }
@@ -3948,10 +3883,11 @@ function resolveBranchName() {
     }
     else {
         // local environment
-        branchName = (0,external_child_process_.execSync)('git symbolic-ref --short -q HEAD', { encoding: 'utf8' }).trim();
+        branchName = child_process_1.execSync('git symbolic-ref --short -q HEAD', { encoding: 'utf8' }).trim();
     }
     return branchName;
 }
+exports.resolveBranchName = resolveBranchName;
 /**
  * Determine if stage is production or not.
  *
@@ -3961,6 +3897,7 @@ function resolveBranchName() {
 function isProduction(stageName) {
     return REGEX_MASTER.test(stageName);
 }
+exports.isProduction = isProduction;
 /**
  * Determine if stage is a pull request.
  *
@@ -3970,7 +3907,81 @@ function isProduction(stageName) {
 function isPullRequest(stageName) {
     return stageName.startsWith('pr');
 }
+exports.isPullRequest = isPullRequest;
 //# sourceMappingURL=branch.utils.js.map
+
+/***/ }),
+
+/***/ 8239:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isPullRequestCI = exports.isPullRequestGithubWorkflow = exports.isPullRequestTravis = exports.runningLocal = exports.runningOnCI = exports.getGithubWorkflowTrigger = exports.isCI = exports.isGithubWorkflow = exports.isTravis = void 0;
+/**
+ * @return Returns true if running inside a gitHub workflow
+ */
+function isTravis(envVars) {
+    return envVars.TRAVIS === 'true';
+}
+exports.isTravis = isTravis;
+/**
+ * @return Returns true if running inside a gitHub workflow
+ */
+function isGithubWorkflow(envVars) {
+    return envVars.GITHUB_ACTIONS === 'true';
+}
+exports.isGithubWorkflow = isGithubWorkflow;
+function isCI(envVars) {
+    return isTravis(envVars) || isGithubWorkflow(envVars);
+}
+exports.isCI = isCI;
+/**
+ * @return Returns the name of the trigger which caused a gitHub workflow run
+ */
+function getGithubWorkflowTrigger() {
+    const env = process.env;
+    return env.GITHUB_EVENT_NAME; // tslint:disable-line:no-non-null-assertion
+}
+exports.getGithubWorkflowTrigger = getGithubWorkflowTrigger;
+/**
+ * @return Returns true if we are running either on travis or gitHub
+ */
+function runningOnCI() {
+    const env = process.env;
+    return isTravis(env) || isGithubWorkflow(env);
+}
+exports.runningOnCI = runningOnCI;
+/**
+ * @return Returns true if not on running on any known CI (travis, gitHub workflow)
+ */
+function runningLocal() {
+    return !runningOnCI();
+}
+exports.runningLocal = runningLocal;
+/**
+ * @return Returns true if the travis job was triggered from a PR
+ */
+function isPullRequestTravis() {
+    const env = process.env;
+    return isTravis(env) && env.TRAVIS_PULL_REQUEST !== 'false';
+}
+exports.isPullRequestTravis = isPullRequestTravis;
+/**
+ * @return Returns true if the job was triggered from a PR
+ */
+function isPullRequestGithubWorkflow() {
+    const env = process.env;
+    // tslint:disable-next-line:no-non-null-assertion
+    return isGithubWorkflow(env) && env.GITHUB_EVENT_NAME === 'pull_request'; // GITHUB_REF.startsWith('refs/pull/'))
+}
+exports.isPullRequestGithubWorkflow = isPullRequestGithubWorkflow;
+function isPullRequestCI() {
+    return isPullRequestTravis() || isPullRequestGithubWorkflow();
+}
+exports.isPullRequestCI = isPullRequestCI;
+//# sourceMappingURL=ci.js.map
 
 /***/ }),
 
@@ -29522,6 +29533,33 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 892:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.fetchAllStacks = void 0;
+async function fetchAllStacks(cfn, stackNamePrefix, stackNameSuffix) {
+    const stacks = [];
+    let nextToken = undefined;
+    do {
+        const stackListResponse = await cfn.listStacks({
+            NextToken: nextToken,
+            StackStatusFilter: ['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE', 'UPDATE_ROLLBACK_COMPLETE', 'IMPORT_COMPLETE'],
+        }).promise();
+        const matchingStacks = stackListResponse.StackSummaries
+            .filter((s) => s.StackName.startsWith(stackNamePrefix) && s.StackName.endsWith(stackNameSuffix));
+        stacks.push(...matchingStacks);
+        nextToken = stackListResponse.NextToken;
+    } while (nextToken);
+    return stacks;
+}
+exports.fetchAllStacks = fetchAllStacks;
+
+
+/***/ }),
+
 /***/ 6144:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -29554,29 +29592,25 @@ exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const cloudformation_1 = __importDefault(__nccwpck_require__(4643));
-const branch_utils_1 = __nccwpck_require__(6858);
+const branch_utils_1 = __nccwpck_require__(4010);
+const fetch_all_stacks_function_1 = __nccwpck_require__(892);
 async function run() {
     try {
         console.debug('github', github.context);
         const stackNamePrefix = core.getInput('stackNamePrefix');
         const stage = branch_utils_1.branchToStageName(github.context.payload.ref.replace(/^(.+\/)?/, ''));
-        console.log(`using stack name prefix ${stackNamePrefix || '_NOT_DEFINED_'}`);
-        console.log(`using stack name suffix ${stage || '_NOT_DEFINED_'}`);
+        console.log(`provided stack name prefix: ${stackNamePrefix || '_NOT_DEFINED_'}`);
+        console.log(`stage as stack name suffix: ${stage || '_NOT_DEFINED_'}`);
         const cfn = new cloudformation_1.default();
-        const stacks = [];
-        let nextToken = undefined;
-        do {
-            const stackListResponse = await cfn.listStacks({
-                NextToken: nextToken,
-                StackStatusFilter: ['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE', 'UPDATE_ROLLBACK_COMPLETE', 'IMPORT_COMPLETE'],
-            }).promise();
-            const matchingStacks = stackListResponse.StackSummaries
-                .filter((s) => s.StackName.startsWith(stackNamePrefix) && s.StackName.endsWith(stage));
-            stacks.push(...matchingStacks);
-            nextToken = stackListResponse.NextToken;
-        } while (nextToken);
-        console.log('stacks:', stacks);
-        core.setOutput('deletedStacks', stacks.map((s) => s.StackName));
+        const stacks = await fetch_all_stacks_function_1.fetchAllStacks(cfn, stackNamePrefix, stage);
+        const stackNames = stacks.map((s) => s.StackName);
+        if (stacks.length === 0) {
+            console.info('No Stacks to delete');
+        }
+        else {
+            console.log('Stacks to delete:', stackNames);
+        }
+        core.setOutput('deletedStacks', stackNames);
     }
     catch (error) {
         core.setFailed(error.message);
@@ -29924,34 +29958,6 @@ module.exports = require("zlib");;
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__nccwpck_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__nccwpck_require__.o = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop)
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__nccwpck_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
 /******/ 	__nccwpck_require__.ab = __dirname + "/";/************************************************************************/
