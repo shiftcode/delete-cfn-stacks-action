@@ -29541,8 +29541,11 @@ function wrappy (fn, cb) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deleteStacks = void 0;
 async function deleteStacks(cfn, stacksToDelete) {
+    if (stacksToDelete.length === 0) {
+        return;
+    }
     console.log('delete stacks:', stacksToDelete.map((s) => s.StackName));
-    await Promise.all(stacksToDelete.map(({ StackName }) => cfn.deleteStack({ StackName })));
+    await Promise.all(stacksToDelete.map(({ StackName }) => cfn.deleteStack({ StackName }).promise()));
 }
 exports.deleteStacks = deleteStacks;
 
