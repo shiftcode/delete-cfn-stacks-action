@@ -4,8 +4,8 @@ inputs:
   stackNamePrefix: # id of input
     description: 'prefix of the stack names to delete'
     required: true
-  blocking: # id of input
-    description: 'whether or not the action should run until the stack is actually deleted'
+  waitForDeleteComplete: # id of input
+    description: 'whether or not the action should run (wait) until the stack is completely deleted'
     required: true
     default: 'false'
 outputs:

@@ -29566,8 +29566,8 @@ const stack_helper_1 = __nccwpck_require__(6963);
 async function run() {
     try {
         console.debug('github', github.context);
-        const waitForDeleteComplete = core.getInput('waitForDeleteComplete') === 'true';
-        const stackNamePrefix = core.getInput('stackNamePrefix');
+        const waitForDeleteComplete = core.getInput('waitForDeleteComplete', { required: true }) === 'true';
+        const stackNamePrefix = core.getInput('stackNamePrefix', { required: true });
         const branchName = branch_utils_1.parseBranchName(github.context.payload.ref.replace(/^(.+\/)?/, ''));
         const xxSuffix = `xx${branchName.branchId}`;
         const prSuffix = `pr${branchName.branchId}`;

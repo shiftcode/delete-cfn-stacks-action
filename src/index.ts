@@ -7,8 +7,8 @@ export async function run() {
   try {
     console.debug('github', github.context)
     // reading the inputs (inputs defined in action.yml)
-    const waitForDeleteComplete = core.getInput('waitForDeleteComplete') === 'true'
-    const stackNamePrefix = core.getInput('stackNamePrefix')
+    const waitForDeleteComplete = core.getInput('waitForDeleteComplete', { required: true }) === 'true'
+    const stackNamePrefix = core.getInput('stackNamePrefix', { required: true })
     const branchName = parseBranchName(github.context.payload.ref.replace(/^(.+\/)?/, ''))
     const xxSuffix = `xx${branchName.branchId}`
     const prSuffix = `pr${branchName.branchId}`
