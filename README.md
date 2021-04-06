@@ -3,7 +3,7 @@
 ![version](https://img.shields.io/github/tag/shiftcode/delete-cfn-stacks-action?label=version)
 
 
-This action deletes all cloudformation stacks in the provided region with the given name prefix + the stage suffix. The stage is transformed from the branch name (eg. `#85-my-feature` > `xx85` / `pr85` (if PullRequest), `master` > `master`)
+This action deletes all cloudformation xx/pr stacks in the provided region with the given name prefix + the stage suffix. The stage is transformed from the branch name (eg. `#85-my-feature` > `xx85` / `pr85`). `master` branch is always ignored.
 
 Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=true also autoDeleteItems, etc.)
 
@@ -47,5 +47,5 @@ To test the action locally: call `index.js` with env var `INPUT_STACKNAMEPREFIX`
 ### new version
 1) edit
 2) commit
-3) set tag `git tag -a -m "my fancy release" v0.0.1`
+3) set tag `git tag -a -m "my fancy release" v0.0.X`
 4) push with tags `git push --follow-tags`
