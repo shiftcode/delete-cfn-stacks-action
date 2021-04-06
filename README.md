@@ -28,6 +28,7 @@ Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=t
   with:
     stackNamePrefix: 'ch-website'
     waitForDeleteComplete: true
+    ignoreBranches: '["master", "#001-dev"]'
 ```
 ###Hints
 - if there are stacks in multiple regions: use both actions two times with their corresponding region.

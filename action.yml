@@ -1,15 +1,20 @@
 name: 'Delete CloudFormation Stacks'
+author: 'shiftcode GmbH'
 description: 'Delete multiple cloudformation stacks by prefix and stage suffix'
 inputs:
-  stackNamePrefix: # id of input
+  stackNamePrefix:
     description: 'prefix of the stack names to delete'
     required: true
-  waitForDeleteComplete: # id of input
+  waitForDeleteComplete:
     description: 'whether or not the action should run (wait) until the stack is completely deleted'
     required: true
     default: 'false'
+  ignoreBranches:
+    description: 'provide a list of branches to ignore (JSON array)'
+    required: true
+    default: '[]'
 outputs:
-  deletedStacks: # id of output
+  deletedStacks:
     description: 'The stacks that were deleted (array of names)'
 runs:
   using: 'node12'

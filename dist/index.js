@@ -29568,9 +29568,25 @@ async function run() {
         console.debug('github', github.context);
         const waitForDeleteComplete = core.getInput('waitForDeleteComplete', { required: true }) === 'true';
         const stackNamePrefix = core.getInput('stackNamePrefix', { required: true });
-        const branchName = branch_utils_1.parseBranchName(github.context.payload.ref.replace(/^(.+\/)?/, ''));
-        const xxSuffix = `xx${branchName.branchId}`;
-        const prSuffix = `pr${branchName.branchId}`;
+        const ignoreBranches = JSON.parse(core.getInput('ignoreBranches', { required: true }));
+        if (!Array.isArray(ignoreBranches)) {
+            throw new Error(`action input 'ignoreBranches' needs to be a json array. provided value '${core.getInput('ignoreBranches')}' could not be parsed`);
+        }
+        const ref = github.context.payload.ref;
+        if (branch_utils_1.isMasterBranch(ref)) {
+            console.info(`detected master branch -- cancel action`);
+            core.setOutput('deletedStacks', []);
+            return;
+        }
+        if (ignoreBranches.includes(ref)) {
+            console.info(`branch '${github.context.payload.ref}' was defined to ignore.`);
+            console.info(`cancel action`);
+            core.setOutput('deletedStacks', []);
+            return;
+        }
+        const branch = branch_utils_1.parseBranchName(ref.replace(/^(.+\/)?/, ''));
+        const xxSuffix = `xx${branch.branchId}`;
+        const prSuffix = `pr${branch.branchId}`;
         console.log(`provided stack name prefix: ${stackNamePrefix}`);
         console.log(`stage as stack name suffix: ${xxSuffix}|${prSuffix}`);
         const stackHelper = new stack_helper_1.StackHelper();
@@ -29636,6 +29652,7 @@ class StackHelper {
             return;
         }
         console.log('delete stacks:', stackNames);
+        console.log('waitForDeleteComplete:', waitForDeleteComplete);
         await Promise.all(stackNames.map((s) => this.deleteStack(s, waitForDeleteComplete)));
     }
     deleteStack(stackName, waitForDeleteComplete = false) {

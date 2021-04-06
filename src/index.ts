@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { parseBranchName } from '@shiftcode/build-helper/branch.utils'
+import { isMasterBranch, parseBranchName } from '@shiftcode/build-helper/branch.utils'
 import { StackHelper } from './stack-helper'
 
 export async function run() {
@@ -9,9 +9,29 @@ export async function run() {
     // reading the inputs (inputs defined in action.yml)
     const waitForDeleteComplete = core.getInput('waitForDeleteComplete', { required: true }) === 'true'
     const stackNamePrefix = core.getInput('stackNamePrefix', { required: true })
-    const branchName = parseBranchName(github.context.payload.ref.replace(/^(.+\/)?/, ''))
-    const xxSuffix = `xx${branchName.branchId}`
-    const prSuffix = `pr${branchName.branchId}`
+    const ignoreBranches: string[] = JSON.parse(core.getInput('ignoreBranches', { required: true }))
+
+    if (!Array.isArray(ignoreBranches)) {
+      throw new Error(`action input 'ignoreBranches' needs to be a json array. provided value '${core.getInput('ignoreBranches')}' could not be parsed`)
+    }
+
+    const ref = github.context.payload.ref
+
+    if (isMasterBranch(ref)) {
+      console.info(`detected master branch -- cancel action`)
+      core.setOutput('deletedStacks', [])
+      return
+    }
+    if (ignoreBranches.includes(ref)) {
+      console.info(`branch '${github.context.payload.ref}' was defined to ignore.`)
+      console.info(`cancel action`)
+      core.setOutput('deletedStacks', [])
+      return
+    }
+
+    const branch = parseBranchName(ref.replace(/^(.+\/)?/, ''))
+    const xxSuffix = `xx${branch.branchId}`
+    const prSuffix = `pr${branch.branchId}`
 
     console.log(`provided stack name prefix: ${stackNamePrefix}`)
     console.log(`stage as stack name suffix: ${xxSuffix}|${prSuffix}`)

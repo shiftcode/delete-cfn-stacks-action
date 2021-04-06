@@ -34,6 +34,7 @@ export class StackHelper {
       return
     }
     console.log('delete stacks:', stackNames)
+    console.log('waitForDeleteComplete:', waitForDeleteComplete)
     await Promise.all(stackNames.map((s) => this.deleteStack(s, waitForDeleteComplete)))
   }
 
