@@ -29566,7 +29566,7 @@ const stack_helper_1 = __nccwpck_require__(6963);
 async function run() {
     try {
         console.debug('github', github.context);
-        const blocking = core.getInput('blocking') === 'true';
+        const waitForDeleteComplete = core.getInput('waitForDeleteComplete') === 'true';
         const stackNamePrefix = core.getInput('stackNamePrefix');
         const branchName = branch_utils_1.parseBranchName(github.context.payload.ref.replace(/^(.+\/)?/, ''));
         const xxSuffix = `xx${branchName.branchId}`;
@@ -29583,8 +29583,8 @@ async function run() {
         }
         else {
             await Promise.all([
-                stackHelper.deleteStacks(xxStacks, blocking),
-                stackHelper.deleteStacks(prStacks, blocking),
+                stackHelper.deleteStacks(xxStacks, waitForDeleteComplete),
+                stackHelper.deleteStacks(prStacks, waitForDeleteComplete),
             ]);
         }
         core.setOutput('deletedStacks', [...xxStacks, ...prStacks]);
@@ -29611,17 +29611,18 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.StackHelper = void 0;
 const cloudformation_1 = __importDefault(__nccwpck_require__(4643));
 const timeout_async_1 = __nccwpck_require__(1890);
+const COMPLETED_STATI = ['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE', 'UPDATE_ROLLBACK_COMPLETE', 'IMPORT_COMPLETE'];
 class StackHelper {
     constructor(cfn) {
         this.cfn = cfn || new cloudformation_1.default();
     }
-    async listAllStacks(stackNamePrefix) {
+    async listAllStacks(stackNamePrefix, statusFilter = COMPLETED_STATI) {
         const stacks = [];
         let nextToken = undefined;
         do {
             const stackListResponse = await this.cfn.listStacks({
                 NextToken: nextToken,
-                StackStatusFilter: ['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE', 'UPDATE_ROLLBACK_COMPLETE', 'IMPORT_COMPLETE'],
+                StackStatusFilter: statusFilter,
             }).promise();
             const matchingStacks = stackListResponse.StackSummaries
                 .filter((s) => s.StackName.startsWith(stackNamePrefix));
@@ -29630,16 +29631,16 @@ class StackHelper {
         } while (nextToken);
         return stacks;
     }
-    async deleteStacks(stackNames, blocking = false) {
+    async deleteStacks(stackNames, waitForDeleteComplete = false) {
         if (stackNames.length === 0) {
             return;
         }
         console.log('delete stacks:', stackNames);
-        await Promise.all(stackNames.map((s) => this.deleteStack(s, blocking)));
+        await Promise.all(stackNames.map((s) => this.deleteStack(s, waitForDeleteComplete)));
     }
-    deleteStack(stackName, blocking = false) {
+    deleteStack(stackName, waitForDeleteComplete = false) {
         return this.cfn.deleteStack({ StackName: stackName }).promise()
-            .then(() => blocking ? this.getStackUpdateUntilDeleted(stackName) : true);
+            .then(() => waitForDeleteComplete ? this.waitForDeleteComplete(stackName) : true);
     }
     describeStack(stackName) {
         return this.cfn.describeStacks({ StackName: stackName }).promise()
@@ -29647,6 +29648,10 @@ class StackHelper {
             const stack = res.Stacks.find((s) => s.StackName === stackName);
             return stack || null;
         });
+    }
+    waitForDeleteComplete(stackName) {
+        return this.cfn.waitFor('stackDeleteComplete', { StackName: stackName }).promise()
+            .then(() => true);
     }
     getStackUpdateUntilDeleted(stackName, first = true) {
         return this.describeStack(stackName)

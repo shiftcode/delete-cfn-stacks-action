@@ -7,7 +7,7 @@ export async function run() {
   try {
     console.debug('github', github.context)
     // reading the inputs (inputs defined in action.yml)
-    const blocking = core.getInput('blocking') === 'true'
+    const waitForDeleteComplete = core.getInput('waitForDeleteComplete') === 'true'
     const stackNamePrefix = core.getInput('stackNamePrefix')
     const branchName = parseBranchName(github.context.payload.ref.replace(/^(.+\/)?/, ''))
     const xxSuffix = `xx${branchName.branchId}`
@@ -28,8 +28,8 @@ export async function run() {
       console.info('No Stacks to delete')
     } else {
       await Promise.all([
-        stackHelper.deleteStacks(xxStacks, blocking),
-        stackHelper.deleteStacks(prStacks, blocking),
+        stackHelper.deleteStacks(xxStacks, waitForDeleteComplete),
+        stackHelper.deleteStacks(prStacks, waitForDeleteComplete),
       ])
     }
 

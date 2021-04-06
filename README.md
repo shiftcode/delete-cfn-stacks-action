@@ -10,8 +10,8 @@ Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=t
 #### `stackNamePrefix`
 **Required** `string` The prefix of the stack names to delete.
 
-#### `blocking`
-**Optional** `boolean` Whether the action should wait until the stack is actually deleted (status=`DELETE_COMPLETE`).\
+#### `waitForDeleteComplete`
+**Optional** `boolean` Whether the action should wait until the stack is completely deleted (status=`DELETE_COMPLETE`).\
 
 
 ### Example workflow step config
@@ -27,6 +27,7 @@ Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=t
   uses: shiftcode/delete-cfn-stacks-action@v0.0.1
   with:
     stackNamePrefix: 'ch-website'
+    waitForDeleteComplete: true
 ```
 ###Hints
 - if there are stacks in multiple regions: use both actions two times with their corresponding region.
