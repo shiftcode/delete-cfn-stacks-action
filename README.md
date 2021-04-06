@@ -14,7 +14,10 @@ Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=t
 **Required** `string` The prefix of the stack names to delete.
 
 #### `waitForDeleteComplete`
-**Optional** `boolean` Whether the action should wait until the stack is completely deleted (status=`DELETE_COMPLETE`).\
+**Optional** `boolean` Whether the action should wait until the stack is completely deleted (status=`DELETE_COMPLETE`).
+
+#### `ignoreBranches`
+**Optional** `JSON String Array` branches to ignore (early exit, necessary since on-delete workflows do not support branch restrictions). `master` branch is always ignored.
 
 
 ### Example workflow step config
