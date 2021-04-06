@@ -1,4 +1,7 @@
 # Delete CloudFormation stacks action
+![version](https://img.shields.io/github/last-commit/shiftcode/delete-cfn-stacks-action)
+![version](https://img.shields.io/github/tag/shiftcode/delete-cfn-stacks-action?label=version)
+
 
 This action deletes all cloudformation stacks in the provided region with the given name prefix + the stage suffix. The stage is transformed from the branch name (eg. `#85-my-feature` > `xx85` / `pr85` (if PullRequest), `master` > `master`)
 
@@ -24,7 +27,7 @@ Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=t
     role-to-assume: 'arn:aws:iam::411802732539:role/ScAccess'
     aws-region: eu-central-1
 - name: Delete Stacks
-  uses: shiftcode/delete-cfn-stacks-action@v0.0.1
+  uses: shiftcode/delete-cfn-stacks-action@v0.0.X
   with:
     stackNamePrefix: 'ch-website'
     waitForDeleteComplete: true
