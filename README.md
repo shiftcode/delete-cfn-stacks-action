@@ -27,7 +27,7 @@ Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=t
   with:
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    role-to-assume: 'arn:aws:iam::411802732539:role/ScAccess'
+    role-to-assume: 'arn:aws:iam::{ACCOUNT_ID}:role/{ROLE_NAME}'
     aws-region: eu-central-1
 - name: Delete Stacks
   uses: shiftcode/delete-cfn-stacks-action@v0.0.X
@@ -45,7 +45,7 @@ Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=t
 To test the action locally: call `index.js` with env var `INPUT_STACKNAMEPREFIX`
 --> `INPUT_STACKNAMEPREFIX="bag-covid19" node ./dist/index.js`
 ### new version
-1) edit
-2) commit
+1) implement your changes
+2) commit with `npx commit`
 3) set tag `git tag -a -m "my fancy release" v0.0.X`
 4) push with tags `git push --follow-tags`
