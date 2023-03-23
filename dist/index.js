@@ -5193,43 +5193,104 @@ exports.getUserAgent = getUserAgent;
 
 /***/ }),
 
-/***/ 4010:
+/***/ 66:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isPullRequest = exports.isProduction = exports.resolveBranchName = exports.parseBranchName = exports.isMasterBranch = exports.branchToStageName = void 0;
-const child_process_1 = __nccwpck_require__(2081);
-const ci_1 = __nccwpck_require__(8239);
+const tslib_1 = __nccwpck_require__(4351);
+(0, tslib_1.__exportStar)(__nccwpck_require__(4692), exports);
+(0, tslib_1.__exportStar)(__nccwpck_require__(5513), exports);
+(0, tslib_1.__exportStar)(__nccwpck_require__(6836), exports);
+(0, tslib_1.__exportStar)(__nccwpck_require__(542), exports);
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 4692:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isScOverrideActive = exports.isPullRequest = exports.isProduction = exports.parseBranchName = exports.isMainBranch = exports.isMasterBranch = exports.resolveBranchName = exports.getBranchInfo = exports.createStageInfo = exports.REGEX_BRANCH_NAME = exports.REGEX_MAIN = exports.REGEX_MASTER = void 0;
+const git_utils_1 = __nccwpck_require__(5513);
+const github_utils_1 = __nccwpck_require__(6836);
 /** regex to match the master branch */
-const REGEX_MASTER = /^master$/;
+exports.REGEX_MASTER = /^master$/;
+/** regex to match the main branch */
+exports.REGEX_MAIN = /^main$/;
 /** regex to match our branch conventions with the following capture groups: fullMatch / branch id / branch name */
-const REGEX_BRANCH_NAME = /^[a-z]*\/?#(\d+)-(.*)/;
-/** we don't allow executions on local master branch without this flag */
-const OVERRIDE_FLAG = 'SC_OVERRIDE';
+exports.REGEX_BRANCH_NAME = /^[a-z]*\/?#(\d+)-(.*)/;
 /**
- * @param branchName The branch name must match our convention (@link REGEX_BRANCH_NAME)
- * @return Returns the stage for a given branch name (if any, otherwise we resolve it calling @link resolveBranchName),
- * the stage is defined as xx|pr<branchId>
+ * create the {@link StageInfo} object from given stage
+ * @param stage the name either matching xx\d+ , pr\d+ or master|main
  */
-function branchToStageName(branchName) {
-    branchName = branchName || resolveBranchName();
-    if (isMasterBranch(branchName)) {
-        return branchName;
+function createStageInfo(stage) {
+    const isPr = isPullRequest(stage);
+    const isXx = isDevStage('xx');
+    const isProd = isProduction(stage);
+    if (!isPr && !isXx && !isProd) {
+        throw new Error('The provided stage neither is xx nor pr nor master/main.');
     }
-    const { branchId } = parseBranchName(branchName);
-    if (branchId) {
-        if (ci_1.isPullRequestCI()) {
-            return `pr${branchId}`;
-        }
-        else {
-            return `xx${branchId}`;
-        }
-    }
-    throw new Error('branchName does not match our naming convention');
+    return { stage, isProd, isPr };
 }
-exports.branchToStageName = branchToStageName;
+exports.createStageInfo = createStageInfo;
+/**
+ * @param env process.env
+ * @return Returns the branch info containing the stage which is defined as xx|pr<branchId> or 'master' / 'main'
+ * @throws if master | main branch is used locally without override flag
+ */
+function getBranchInfo(env, branchName) {
+    let isPr = false;
+    if ((0, github_utils_1.isGithubWorkflow)(env)) {
+        // github workflow environment
+        branchName = branchName !== null && branchName !== void 0 ? branchName : (0, github_utils_1.getGithubBranchName)(env);
+        isPr = (0, github_utils_1.isGithubPullRequest)(env);
+    }
+    else {
+        // local environment
+        branchName = branchName !== null && branchName !== void 0 ? branchName : (0, git_utils_1.gitBranchName)();
+    }
+    if (isMasterBranch(branchName) || isMainBranch(branchName)) {
+        if (!(0, github_utils_1.isGithubWorkflow)(env) && !isScOverrideActive(env)) {
+            throw new Error(`prod (master or main) branch can't be used locally`);
+        }
+        return {
+            branchName,
+            isProd: true,
+            isPr: false,
+            stage: branchName,
+            name: branchName,
+        };
+    }
+    else {
+        const { branchId, branchName: name } = parseBranchName(branchName);
+        return {
+            branchName,
+            isProd: false,
+            isPr,
+            stage: isPr ? `pr${branchId}` : `xx${branchId}`,
+            name,
+        };
+    }
+}
+exports.getBranchInfo = getBranchInfo;
+/**
+ * @return Returns the branch name. The name is resolved depending on provided environment (github actions | local).
+ */
+function resolveBranchName(env) {
+    if ((0, github_utils_1.isGithubWorkflow)(env)) {
+        // github workflow environment
+        return (0, github_utils_1.getGithubBranchName)(env);
+    }
+    else {
+        // local environment
+        return (0, git_utils_1.gitBranchName)();
+    }
+}
+exports.resolveBranchName = resolveBranchName;
 /**
  * @return Returns true if the given branch name (if any, otherwise we resolve depending on runtime,
  * see @link resolveBranchName) is the master branch, false otherwise
@@ -5238,24 +5299,33 @@ exports.branchToStageName = branchToStageName;
  * @link resolveBranchName
  */
 function isMasterBranch(branchName) {
-    branchName = branchName || resolveBranchName();
-    const isMaster = REGEX_MASTER.test(branchName);
-    if (isMaster && ci_1.runningLocal() && process.env[OVERRIDE_FLAG] !== 'true') {
-        throw new Error(`Master branch can't be used local`);
-    }
-    return isMaster;
+    return exports.REGEX_MASTER.test(branchName);
 }
 exports.isMasterBranch = isMasterBranch;
+/**
+ * @return Returns true if the given branch name (if any, otherwise we resolve depending on runtime,
+ * see @link resolveBranchName) is the main branch, false otherwise
+ * @throws Throws an error when this method is called locally without override flag to prevent from accidential execution
+ * on main branch
+ * @link resolveBranchName
+ */
+function isMainBranch(branchName) {
+    return exports.REGEX_MAIN.test(branchName);
+}
+exports.isMainBranch = isMainBranch;
 /**
  * @return Returns an object containing branchId and branchName
  * @throws Throws an error if given branchName does not match our convention
  */
 function parseBranchName(branchName) {
-    const matches = branchName.match(REGEX_BRANCH_NAME);
+    const matches = branchName.match(exports.REGEX_BRANCH_NAME);
     if (matches) {
         // [0] full match / [1] branch id / [2] branch name
-        const [fullMatch, branchId, branchN] = matches;
-        return { branchId: parseInt(branchId, 10), branchName: branchN };
+        const [, branchId, branchN] = matches;
+        return {
+            branchId: parseInt(branchId, 10),
+            branchName: branchN,
+        };
     }
     else {
         throw new Error(`given branch name ${branchName} does not match our convention #<one or more digit>-<branch-name-with-kebap-case>`);
@@ -5263,50 +5333,13 @@ function parseBranchName(branchName) {
 }
 exports.parseBranchName = parseBranchName;
 /**
- * @return Returns the branch name. The name is resolved depending on environment (travis | github actions | local).
- */
-function resolveBranchName() {
-    const ENV = process.env;
-    let branchName;
-    if (ci_1.isTravis(ENV)) {
-        if (ci_1.isPullRequestTravis()) {
-            branchName = ENV.TRAVIS_PULL_REQUEST_BRANCH; // tslint:disable-line:no-non-null-assertion
-        }
-        else {
-            branchName = ENV.TRAVIS_BRANCH; // tslint:disable-line:no-non-null-assertion
-        }
-    }
-    else if (ci_1.isGithubWorkflow(ENV)) {
-        if (ci_1.isPullRequestGithubWorkflow()) {
-            if (!ENV.GITHUB_HEAD_REF) {
-                throw new Error('env var GITHUB_HEAD_REF must be defined');
-            }
-            branchName = ENV.GITHUB_HEAD_REF;
-        }
-        else {
-            if (!ENV.GITHUB_CONTEXT) {
-                throw new Error(`env var GITHUB_CONTEXT must be defined`);
-            }
-            const ref = JSON.parse(ENV.GITHUB_CONTEXT).ref;
-            console.log('ref', ref);
-            branchName = ref.replace('refs/heads/', ''); // tslint:disable-line:no-non-null-assertion
-        }
-    }
-    else {
-        // local environment
-        branchName = child_process_1.execSync('git symbolic-ref --short -q HEAD', { encoding: 'utf8' }).trim();
-    }
-    return branchName;
-}
-exports.resolveBranchName = resolveBranchName;
-/**
- * Determine if stage is production or not.
+ * Determine if stage is production (master | main) or not.
  *
  * @param stageName the stage to evaluate
- * @return returns true if the stage is 'master', false if not
+ * @return returns true if the stage is 'master' or 'main', false if not
  */
 function isProduction(stageName) {
-    return REGEX_MASTER.test(stageName);
+    return exports.REGEX_MASTER.test(stageName) || exports.REGEX_MAIN.test(stageName);
 }
 exports.isProduction = isProduction;
 /**
@@ -5319,80 +5352,177 @@ function isPullRequest(stageName) {
     return stageName.startsWith('pr');
 }
 exports.isPullRequest = isPullRequest;
-//# sourceMappingURL=branch.utils.js.map
+function isDevStage(stageName) {
+    return stageName.startsWith('xx');
+}
+function isScOverrideActive(env) {
+    return typeof env === 'object' && env !== null && env.SC_OVERRIDE === 'true';
+}
+exports.isScOverrideActive = isScOverrideActive;
+//# sourceMappingURL=base.utils.js.map
 
 /***/ }),
 
-/***/ 8239:
+/***/ 5513:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.gitBranchName = exports.gitSwitchBranch = void 0;
+const helpers_1 = __nccwpck_require__(2268);
+/**
+ * Will update remote settings to fetch repo and then switch to given branch.
+ * @return Returns the current commit SHA
+ */
+function gitSwitchBranch(githubToken, repository, branchName) {
+    git('config', 'remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"');
+    git('remote', `set-url origin https://${githubToken}@github.com/${repository}.git`);
+    git('fetch');
+    git('checkout', `-b "${branchName}" "origin/${branchName}" --`);
+    // return current commit sha
+    return (0, helpers_1.execReturn)(`git log -1 --pretty=format:'%H'`);
+}
+exports.gitSwitchBranch = gitSwitchBranch;
+function gitBranchName() {
+    return gitReturn('symbolic-ref', '--short', '-q HEAD');
+}
+exports.gitBranchName = gitBranchName;
+function git(command, ...args) {
+    (0, helpers_1.exec)(`git ${command} ${args.join(' ')}`);
+}
+function gitReturn(command, ...args) {
+    return (0, helpers_1.execReturn)(`git ${command} ${args.join(' ')}`);
+}
+//# sourceMappingURL=git.utils.js.map
+
+/***/ }),
+
+/***/ 6836:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isPullRequestCI = exports.isPullRequestGithubWorkflow = exports.isPullRequestTravis = exports.runningLocal = exports.runningOnCI = exports.getGithubWorkflowTrigger = exports.isCI = exports.isGithubWorkflow = exports.isTravis = void 0;
+exports.getGhToken = exports.getGithubBranchName = exports.isGithubPullRequest = exports.hasGithubContext = exports.isGithubWorkflow = void 0;
 /**
- * @return Returns true if running inside a gitHub workflow
- */
-function isTravis(envVars) {
-    return envVars.TRAVIS === 'true';
-}
-exports.isTravis = isTravis;
-/**
- * @return Returns true if running inside a gitHub workflow
+ *  checks if running inside a gitHub workflow
  */
 function isGithubWorkflow(envVars) {
-    return envVars.GITHUB_ACTIONS === 'true';
+    return typeof envVars === 'object' && envVars !== null && envVars.GITHUB_ACTIONS === 'true';
 }
 exports.isGithubWorkflow = isGithubWorkflow;
-function isCI(envVars) {
-    return isTravis(envVars) || isGithubWorkflow(envVars);
-}
-exports.isCI = isCI;
 /**
- * @return Returns the name of the trigger which caused a gitHub workflow run
+ *  checks whether GITHUB_CONTEXT exists on given env.
  */
-function getGithubWorkflowTrigger() {
-    const env = process.env;
-    return env.GITHUB_EVENT_NAME; // tslint:disable-line:no-non-null-assertion
+function hasGithubContext(envVars) {
+    return envVars !== null && typeof envVars.GITHUB_CONTEXT === 'string';
 }
-exports.getGithubWorkflowTrigger = getGithubWorkflowTrigger;
+exports.hasGithubContext = hasGithubContext;
 /**
- * @return Returns true if we are running either on travis or gitHub
+ *  checks env if running on a Pull Request
  */
-function runningOnCI() {
-    const env = process.env;
-    return isTravis(env) || isGithubWorkflow(env);
+function isGithubPullRequest(env) {
+    return env.GITHUB_EVENT_NAME === 'pull_request';
 }
-exports.runningOnCI = runningOnCI;
+exports.isGithubPullRequest = isGithubPullRequest;
 /**
- * @return Returns true if not on running on any known CI (travis, gitHub workflow)
+ * returns the branch name from github action env
  */
-function runningLocal() {
-    return !runningOnCI();
+function getGithubBranchName(env) {
+    if (isGithubPullRequest(env)) {
+        if (env.GITHUB_HEAD_REF) {
+            return env.GITHUB_HEAD_REF;
+        }
+        throw new Error('env var GITHUB_HEAD_REF must be defined');
+    }
+    else {
+        if (hasGithubContext(env)) {
+            const ctx = JSON.parse(env.GITHUB_CONTEXT);
+            // tslint:disable-next-line:no-non-null-assertion
+            return ctx.ref.replace('refs/heads/', '');
+        }
+        throw new Error(`env var GITHUB_CONTEXT must be defined`);
+    }
 }
-exports.runningLocal = runningLocal;
+exports.getGithubBranchName = getGithubBranchName;
 /**
- * @return Returns true if the travis job was triggered from a PR
+ * returns token from env var GH_TOKEN or throws when not available
  */
-function isPullRequestTravis() {
-    const env = process.env;
-    return isTravis(env) && env.TRAVIS_PULL_REQUEST !== 'false';
+function getGhToken(env) {
+    if (typeof env === 'object' && env !== null && hasGhToken(env)) {
+        return env.GH_TOKEN;
+    }
+    throw new Error('no GH_TOKEN found in env');
 }
-exports.isPullRequestTravis = isPullRequestTravis;
+exports.getGhToken = getGhToken;
+function hasGhToken(x) {
+    return 'GH_TOKEN' in x && typeof x['GH_TOKEN'] === 'string';
+}
+//# sourceMappingURL=github.utils.js.map
+
+/***/ }),
+
+/***/ 2268:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.execReturn = exports.exec = void 0;
+// tslint:disable:no-console
+const child_process_1 = __nccwpck_require__(2081);
 /**
- * @return Returns true if the job was triggered from a PR
+ * executes a command using child_process
+ * defining 'inherit' as stdio, which prints to the console and ignores the output
  */
-function isPullRequestGithubWorkflow() {
-    const env = process.env;
-    // tslint:disable-next-line:no-non-null-assertion
-    return isGithubWorkflow(env) && env.GITHUB_EVENT_NAME === 'pull_request'; // GITHUB_REF.startsWith('refs/pull/'))
+function exec(command) {
+    console.log(`>>> ${command}`);
+    (0, child_process_1.execSync)(command, { encoding: 'utf8', stdio: 'inherit' });
 }
-exports.isPullRequestGithubWorkflow = isPullRequestGithubWorkflow;
-function isPullRequestCI() {
-    return isPullRequestTravis() || isPullRequestGithubWorkflow();
+exports.exec = exec;
+/**
+ * executes a command using child_process and returns the output
+ */
+function execReturn(command) {
+    console.log(`>>> ${command}`);
+    return (0, child_process_1.execSync)(command, { encoding: 'utf8' }).trim();
 }
-exports.isPullRequestCI = isPullRequestCI;
-//# sourceMappingURL=ci.js.map
+exports.execReturn = execReturn;
+//# sourceMappingURL=helpers.js.map
+
+/***/ }),
+
+/***/ 8310:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+//# sourceMappingURL=github-action-env.type.js.map
+
+/***/ }),
+
+/***/ 2046:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+//# sourceMappingURL=github-context.type.js.map
+
+/***/ }),
+
+/***/ 542:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const tslib_1 = __nccwpck_require__(4351);
+(0, tslib_1.__exportStar)(__nccwpck_require__(8310), exports);
+(0, tslib_1.__exportStar)(__nccwpck_require__(2046), exports);
+//# sourceMappingURL=index.js.map
 
 /***/ }),
 
@@ -29372,6 +29502,383 @@ module.exports = safer
 
 /***/ }),
 
+/***/ 4351:
+/***/ ((module) => {
+
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global global, define, System, Reflect, Promise */
+var __extends;
+var __assign;
+var __rest;
+var __decorate;
+var __param;
+var __esDecorate;
+var __runInitializers;
+var __propKey;
+var __setFunctionName;
+var __metadata;
+var __awaiter;
+var __generator;
+var __exportStar;
+var __values;
+var __read;
+var __spread;
+var __spreadArrays;
+var __spreadArray;
+var __await;
+var __asyncGenerator;
+var __asyncDelegator;
+var __asyncValues;
+var __makeTemplateObject;
+var __importStar;
+var __importDefault;
+var __classPrivateFieldGet;
+var __classPrivateFieldSet;
+var __classPrivateFieldIn;
+var __createBinding;
+(function (factory) {
+    var root = typeof global === "object" ? global : typeof self === "object" ? self : typeof this === "object" ? this : {};
+    if (typeof define === "function" && define.amd) {
+        define("tslib", ["exports"], function (exports) { factory(createExporter(root, createExporter(exports))); });
+    }
+    else if ( true && typeof module.exports === "object") {
+        factory(createExporter(root, createExporter(module.exports)));
+    }
+    else {
+        factory(createExporter(root));
+    }
+    function createExporter(exports, previous) {
+        if (exports !== root) {
+            if (typeof Object.create === "function") {
+                Object.defineProperty(exports, "__esModule", { value: true });
+            }
+            else {
+                exports.__esModule = true;
+            }
+        }
+        return function (id, v) { return exports[id] = previous ? previous(id, v) : v; };
+    }
+})
+(function (exporter) {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+
+    __extends = function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+
+    __assign = Object.assign || function (t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+    };
+
+    __rest = function (s, e) {
+        var t = {};
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+            t[p] = s[p];
+        if (s != null && typeof Object.getOwnPropertySymbols === "function")
+            for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+                if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                    t[p[i]] = s[p[i]];
+            }
+        return t;
+    };
+
+    __decorate = function (decorators, target, key, desc) {
+        var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+        if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+        else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+        return c > 3 && r && Object.defineProperty(target, key, r), r;
+    };
+
+    __param = function (paramIndex, decorator) {
+        return function (target, key) { decorator(target, key, paramIndex); }
+    };
+
+    __esDecorate = function (ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+        function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+        var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+        var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+        var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+        var _, done = false;
+        for (var i = decorators.length - 1; i >= 0; i--) {
+            var context = {};
+            for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+            for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+            context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+            var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+            if (kind === "accessor") {
+                if (result === void 0) continue;
+                if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+                if (_ = accept(result.get)) descriptor.get = _;
+                if (_ = accept(result.set)) descriptor.set = _;
+                if (_ = accept(result.init)) initializers.push(_);
+            }
+            else if (_ = accept(result)) {
+                if (kind === "field") initializers.push(_);
+                else descriptor[key] = _;
+            }
+        }
+        if (target) Object.defineProperty(target, contextIn.name, descriptor);
+        done = true;
+    };
+
+    __runInitializers = function (thisArg, initializers, value) {
+        var useValue = arguments.length > 2;
+        for (var i = 0; i < initializers.length; i++) {
+            value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+        }
+        return useValue ? value : void 0;
+    };
+
+    __propKey = function (x) {
+        return typeof x === "symbol" ? x : "".concat(x);
+    };
+
+    __setFunctionName = function (f, name, prefix) {
+        if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
+        return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
+    };
+
+    __metadata = function (metadataKey, metadataValue) {
+        if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+    };
+
+    __awaiter = function (thisArg, _arguments, P, generator) {
+        function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+        return new (P || (P = Promise))(function (resolve, reject) {
+            function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+            function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+            function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+            step((generator = generator.apply(thisArg, _arguments || [])).next());
+        });
+    };
+
+    __generator = function (thisArg, body) {
+        var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+        return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+        function verb(n) { return function (v) { return step([n, v]); }; }
+        function step(op) {
+            if (f) throw new TypeError("Generator is already executing.");
+            while (g && (g = 0, op[0] && (_ = 0)), _) try {
+                if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+                if (y = 0, t) op = [op[0] & 2, t.value];
+                switch (op[0]) {
+                    case 0: case 1: t = op; break;
+                    case 4: _.label++; return { value: op[1], done: false };
+                    case 5: _.label++; y = op[1]; op = [0]; continue;
+                    case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                    default:
+                        if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                        if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                        if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                        if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                        if (t[2]) _.ops.pop();
+                        _.trys.pop(); continue;
+                }
+                op = body.call(thisArg, _);
+            } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+            if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+        }
+    };
+
+    __exportStar = function(m, o) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p)) __createBinding(o, m, p);
+    };
+
+    __createBinding = Object.create ? (function(o, m, k, k2) {
+        if (k2 === undefined) k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+            desc = { enumerable: true, get: function() { return m[k]; } };
+        }
+        Object.defineProperty(o, k2, desc);
+    }) : (function(o, m, k, k2) {
+        if (k2 === undefined) k2 = k;
+        o[k2] = m[k];
+    });
+
+    __values = function (o) {
+        var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+        if (m) return m.call(o);
+        if (o && typeof o.length === "number") return {
+            next: function () {
+                if (o && i >= o.length) o = void 0;
+                return { value: o && o[i++], done: !o };
+            }
+        };
+        throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+    };
+
+    __read = function (o, n) {
+        var m = typeof Symbol === "function" && o[Symbol.iterator];
+        if (!m) return o;
+        var i = m.call(o), r, ar = [], e;
+        try {
+            while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+        }
+        catch (error) { e = { error: error }; }
+        finally {
+            try {
+                if (r && !r.done && (m = i["return"])) m.call(i);
+            }
+            finally { if (e) throw e.error; }
+        }
+        return ar;
+    };
+
+    /** @deprecated */
+    __spread = function () {
+        for (var ar = [], i = 0; i < arguments.length; i++)
+            ar = ar.concat(__read(arguments[i]));
+        return ar;
+    };
+
+    /** @deprecated */
+    __spreadArrays = function () {
+        for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+        for (var r = Array(s), k = 0, i = 0; i < il; i++)
+            for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+                r[k] = a[j];
+        return r;
+    };
+
+    __spreadArray = function (to, from, pack) {
+        if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+            if (ar || !(i in from)) {
+                if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+                ar[i] = from[i];
+            }
+        }
+        return to.concat(ar || Array.prototype.slice.call(from));
+    };
+
+    __await = function (v) {
+        return this instanceof __await ? (this.v = v, this) : new __await(v);
+    };
+
+    __asyncGenerator = function (thisArg, _arguments, generator) {
+        if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+        var g = generator.apply(thisArg, _arguments || []), i, q = [];
+        return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+        function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+        function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+        function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);  }
+        function fulfill(value) { resume("next", value); }
+        function reject(value) { resume("throw", value); }
+        function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+    };
+
+    __asyncDelegator = function (o) {
+        var i, p;
+        return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+        function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: false } : f ? f(v) : v; } : f; }
+    };
+
+    __asyncValues = function (o) {
+        if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+        var m = o[Symbol.asyncIterator], i;
+        return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+        function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+        function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+    };
+
+    __makeTemplateObject = function (cooked, raw) {
+        if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+        return cooked;
+    };
+
+    var __setModuleDefault = Object.create ? (function(o, v) {
+        Object.defineProperty(o, "default", { enumerable: true, value: v });
+    }) : function(o, v) {
+        o["default"] = v;
+    };
+
+    __importStar = function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+
+    __importDefault = function (mod) {
+        return (mod && mod.__esModule) ? mod : { "default": mod };
+    };
+
+    __classPrivateFieldGet = function (receiver, state, kind, f) {
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+    };
+
+    __classPrivateFieldSet = function (receiver, state, value, kind, f) {
+        if (kind === "m") throw new TypeError("Private method is not writable");
+        if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+        return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+    };
+
+    __classPrivateFieldIn = function (state, receiver) {
+        if (receiver === null || (typeof receiver !== "object" && typeof receiver !== "function")) throw new TypeError("Cannot use 'in' operator on non-object");
+        return typeof state === "function" ? receiver === state : state.has(receiver);
+    };
+
+    exporter("__extends", __extends);
+    exporter("__assign", __assign);
+    exporter("__rest", __rest);
+    exporter("__decorate", __decorate);
+    exporter("__param", __param);
+    exporter("__esDecorate", __esDecorate);
+    exporter("__runInitializers", __runInitializers);
+    exporter("__propKey", __propKey);
+    exporter("__setFunctionName", __setFunctionName);
+    exporter("__metadata", __metadata);
+    exporter("__awaiter", __awaiter);
+    exporter("__generator", __generator);
+    exporter("__exportStar", __exportStar);
+    exporter("__createBinding", __createBinding);
+    exporter("__values", __values);
+    exporter("__read", __read);
+    exporter("__spread", __spread);
+    exporter("__spreadArrays", __spreadArrays);
+    exporter("__spreadArray", __spreadArray);
+    exporter("__await", __await);
+    exporter("__asyncGenerator", __asyncGenerator);
+    exporter("__asyncDelegator", __asyncDelegator);
+    exporter("__asyncValues", __asyncValues);
+    exporter("__makeTemplateObject", __makeTemplateObject);
+    exporter("__importStar", __importStar);
+    exporter("__importDefault", __importDefault);
+    exporter("__classPrivateFieldGet", __classPrivateFieldGet);
+    exporter("__classPrivateFieldSet", __classPrivateFieldSet);
+    exporter("__classPrivateFieldIn", __classPrivateFieldIn);
+});
+
+
+/***/ }),
+
 /***/ 4294:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -33276,8 +33783,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
-const branch_utils_1 = __nccwpck_require__(4010);
 const stack_helper_1 = __nccwpck_require__(6963);
+const branch_utilities_1 = __nccwpck_require__(66);
 async function run() {
     try {
         console.debug('github', github.context);
@@ -33288,7 +33795,7 @@ async function run() {
             throw new Error(`action input 'ignoreBranches' needs to be a json array. provided value '${core.getInput('ignoreBranches')}' could not be parsed`);
         }
         const ref = github.context.payload.ref;
-        if ((0, branch_utils_1.isMasterBranch)(ref)) {
+        if ((0, branch_utilities_1.isMasterBranch)(ref)) {
             console.info(`detected master branch -- cancel action`);
             core.setOutput('deletedStacks', []);
             return;
@@ -33299,14 +33806,13 @@ async function run() {
             core.setOutput('deletedStacks', []);
             return;
         }
-        const branch = (0, branch_utils_1.parseBranchName)(ref.replace(/^(.+\/)?/, ''));
+        const branch = (0, branch_utilities_1.parseBranchName)(ref.replace(/^(.+\/)?/, ''));
         const xxSuffix = `xx${branch.branchId}`;
         const prSuffix = `pr${branch.branchId}`;
         console.log(`provided stack name prefix: ${stackNamePrefix}`);
         console.log(`stage as stack name suffix: ${xxSuffix}|${prSuffix}`);
         const stackHelper = new stack_helper_1.StackHelper();
-        const stacks = (await stackHelper.listAllStacks(stackNamePrefix))
-            .map((s) => s.StackName);
+        const stacks = (await stackHelper.listAllStacks(stackNamePrefix)).map((s) => s.StackName);
         const xxStacks = stacks.filter((stackName) => stackName.endsWith(xxSuffix));
         const prStacks = stacks.filter((stackName) => stackName.endsWith(prSuffix));
         if (!xxStacks.length && !prStacks.length) {
@@ -33342,7 +33848,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.StackHelper = void 0;
 const cloudformation_1 = __importDefault(__nccwpck_require__(4643));
 const timeout_async_1 = __nccwpck_require__(1890);
-const COMPLETED_STATI = ['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'ROLLBACK_COMPLETE', 'UPDATE_ROLLBACK_COMPLETE', 'IMPORT_COMPLETE'];
+const COMPLETED_STATI = [
+    'CREATE_COMPLETE',
+    'UPDATE_COMPLETE',
+    'ROLLBACK_COMPLETE',
+    'UPDATE_ROLLBACK_COMPLETE',
+    'IMPORT_COMPLETE',
+];
 class StackHelper {
     constructor(cfn) {
         this.cfn = cfn || new cloudformation_1.default();
@@ -33351,12 +33863,13 @@ class StackHelper {
         const stacks = [];
         let nextToken = undefined;
         do {
-            const stackListResponse = await this.cfn.listStacks({
+            const stackListResponse = await this.cfn
+                .listStacks({
                 NextToken: nextToken,
                 StackStatusFilter: statusFilter,
-            }).promise();
-            const matchingStacks = stackListResponse.StackSummaries
-                .filter((s) => s.StackName.startsWith(stackNamePrefix));
+            })
+                .promise();
+            const matchingStacks = stackListResponse.StackSummaries.filter((s) => s.StackName.startsWith(stackNamePrefix));
             stacks.push(...matchingStacks);
             nextToken = stackListResponse.NextToken;
         } while (nextToken);
@@ -33371,23 +33884,28 @@ class StackHelper {
         await Promise.all(stackNames.map((s) => this.deleteStack(s, waitForDeleteComplete)));
     }
     deleteStack(stackName, waitForDeleteComplete = false) {
-        return this.cfn.deleteStack({ StackName: stackName }).promise()
-            .then(() => waitForDeleteComplete ? this.waitForDeleteComplete(stackName) : true);
+        return this.cfn
+            .deleteStack({ StackName: stackName })
+            .promise()
+            .then(() => (waitForDeleteComplete ? this.waitForDeleteComplete(stackName) : true));
     }
     describeStack(stackName) {
-        return this.cfn.describeStacks({ StackName: stackName }).promise()
+        return this.cfn
+            .describeStacks({ StackName: stackName })
+            .promise()
             .then((res) => {
             const stack = res.Stacks.find((s) => s.StackName === stackName);
             return stack || null;
         });
     }
     waitForDeleteComplete(stackName) {
-        return this.cfn.waitFor('stackDeleteComplete', { StackName: stackName }).promise()
+        return this.cfn
+            .waitFor('stackDeleteComplete', { StackName: stackName })
+            .promise()
             .then(() => true);
     }
     getStackUpdateUntilDeleted(stackName, first = true) {
-        return this.describeStack(stackName)
-            .then((stack) => {
+        return this.describeStack(stackName).then((stack) => {
             switch (stack.StackStatus) {
                 case 'DELETE_COMPLETE':
                     console.info(`${stack.StackName}: ${stack.StackStatus}`);
@@ -33399,8 +33917,7 @@ class StackHelper {
                     if (first) {
                         console.info(`${stack.StackName}: ${stack.StackStatus}`);
                     }
-                    return (0, timeout_async_1.timeoutAsync)(15)
-                        .then(() => this.getStackUpdateUntilDeleted(stack.StackName, false));
+                    return (0, timeout_async_1.timeoutAsync)(15).then(() => this.getStackUpdateUntilDeleted(stack.StackName, false));
                 default:
                     throw new Error(`StackStatus of ${stack.StackName} is ${stack.StackStatus} (${stack.StackStatusReason})`);
             }

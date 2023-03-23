@@ -11,12 +11,13 @@
     "build:watch": "ncc build ./src/index.ts -o ./dist --watch",
     "lint": "eslint --fix src/*.ts",
     "precommit": "npm run lint && npm run build && git add dist/index.js",
-    "prettier": "prettier --write src/*.ts"
+    "prettier": "prettier --write src/*.ts",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.1",
-    "@shiftcode/build-helper": "^3.0.2-pr84.2",
+    "@shiftcode/branch-utilities": "^1.0.0",
     "aws-sdk": "^2.876.0",
     "tslib": "^2.1.0"
   },
@@ -29,8 +30,8 @@
     "@typescript-eslint/parser": "^4.20.0",
     "@vercel/ncc": "^0.36.1",
     "eslint": "^7.23.0",
-    "husky": "^4.3.8",
-    "prettier": "^2.2.1",
+    "husky": "^8.0.0",
+    "prettier": "^2.8.6",
     "typescript": "^5.0.2"
   }
 }

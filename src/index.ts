@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { isMasterBranch, parseBranchName } from '@shiftcode/build-helper/branch.utils'
 import { StackHelper } from './stack-helper'
+import { isMasterBranch, parseBranchName } from '@shiftcode/branch-utilities'
 
 export async function run() {
   try {
@@ -12,7 +12,11 @@ export async function run() {
     const ignoreBranches: string[] = JSON.parse(core.getInput('ignoreBranches', { required: true }))
 
     if (!Array.isArray(ignoreBranches)) {
-      throw new Error(`action input 'ignoreBranches' needs to be a json array. provided value '${core.getInput('ignoreBranches')}' could not be parsed`)
+      throw new Error(
+        `action input 'ignoreBranches' needs to be a json array. provided value '${core.getInput(
+          'ignoreBranches',
+        )}' could not be parsed`,
+      )
     }
 
     const ref = github.context.payload.ref
@@ -38,8 +42,7 @@ export async function run() {
 
     const stackHelper = new StackHelper()
 
-    const stacks = (await stackHelper.listAllStacks(stackNamePrefix))
-      .map((s) => s.StackName)
+    const stacks = (await stackHelper.listAllStacks(stackNamePrefix)).map((s) => s.StackName)
 
     const xxStacks = stacks.filter((stackName) => stackName.endsWith(xxSuffix))
     const prStacks = stacks.filter((stackName) => stackName.endsWith(prSuffix))
