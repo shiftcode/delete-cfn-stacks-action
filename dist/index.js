@@ -35456,331 +35456,6 @@ exports.getUserAgent = getUserAgent;
 
 /***/ }),
 
-/***/ 70066:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const tslib_1 = __nccwpck_require__(4351);
-(0, tslib_1.__exportStar)(__nccwpck_require__(44692), exports);
-(0, tslib_1.__exportStar)(__nccwpck_require__(55513), exports);
-(0, tslib_1.__exportStar)(__nccwpck_require__(56836), exports);
-(0, tslib_1.__exportStar)(__nccwpck_require__(90542), exports);
-//# sourceMappingURL=index.js.map
-
-/***/ }),
-
-/***/ 44692:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isScOverrideActive = exports.isPullRequest = exports.isProduction = exports.parseBranchName = exports.isMainBranch = exports.isMasterBranch = exports.resolveBranchName = exports.getBranchInfo = exports.createStageInfo = exports.REGEX_BRANCH_NAME = exports.REGEX_MAIN = exports.REGEX_MASTER = void 0;
-const git_utils_1 = __nccwpck_require__(55513);
-const github_utils_1 = __nccwpck_require__(56836);
-/** regex to match the master branch */
-exports.REGEX_MASTER = /^master$/;
-/** regex to match the main branch */
-exports.REGEX_MAIN = /^main$/;
-/** regex to match our branch conventions with the following capture groups: fullMatch / branch id / branch name */
-exports.REGEX_BRANCH_NAME = /^[a-z]*\/?#(\d+)-(.*)/;
-/**
- * create the {@link StageInfo} object from given stage
- * @param stage the name either matching xx\d+ , pr\d+ or master|main
- */
-function createStageInfo(stage) {
-    const isPr = isPullRequest(stage);
-    const isXx = isDevStage('xx');
-    const isProd = isProduction(stage);
-    if (!isPr && !isXx && !isProd) {
-        throw new Error('The provided stage neither is xx nor pr nor master/main.');
-    }
-    return { stage, isProd, isPr };
-}
-exports.createStageInfo = createStageInfo;
-/**
- * @param env process.env
- * @return Returns the branch info containing the stage which is defined as xx|pr<branchId> or 'master' / 'main'
- * @throws if master | main branch is used locally without override flag
- */
-function getBranchInfo(env, branchName) {
-    let isPr = false;
-    if ((0, github_utils_1.isGithubWorkflow)(env)) {
-        // github workflow environment
-        branchName = branchName !== null && branchName !== void 0 ? branchName : (0, github_utils_1.getGithubBranchName)(env);
-        isPr = (0, github_utils_1.isGithubPullRequest)(env);
-    }
-    else {
-        // local environment
-        branchName = branchName !== null && branchName !== void 0 ? branchName : (0, git_utils_1.gitBranchName)();
-    }
-    if (isMasterBranch(branchName) || isMainBranch(branchName)) {
-        if (!(0, github_utils_1.isGithubWorkflow)(env) && !isScOverrideActive(env)) {
-            throw new Error(`prod (master or main) branch can't be used locally`);
-        }
-        return {
-            branchName,
-            isProd: true,
-            isPr: false,
-            stage: branchName,
-            name: branchName,
-        };
-    }
-    else {
-        const { branchId, branchName: name } = parseBranchName(branchName);
-        return {
-            branchName,
-            isProd: false,
-            isPr,
-            stage: isPr ? `pr${branchId}` : `xx${branchId}`,
-            name,
-        };
-    }
-}
-exports.getBranchInfo = getBranchInfo;
-/**
- * @return Returns the branch name. The name is resolved depending on provided environment (github actions | local).
- */
-function resolveBranchName(env) {
-    if ((0, github_utils_1.isGithubWorkflow)(env)) {
-        // github workflow environment
-        return (0, github_utils_1.getGithubBranchName)(env);
-    }
-    else {
-        // local environment
-        return (0, git_utils_1.gitBranchName)();
-    }
-}
-exports.resolveBranchName = resolveBranchName;
-/**
- * @return Returns true if the given branch name (if any, otherwise we resolve depending on runtime,
- * see @link resolveBranchName) is the master branch, false otherwise
- * @throws Throws an error when this method is called locally without override flag to prevent from accidential execution
- * on master branch
- * @link resolveBranchName
- */
-function isMasterBranch(branchName) {
-    return exports.REGEX_MASTER.test(branchName);
-}
-exports.isMasterBranch = isMasterBranch;
-/**
- * @return Returns true if the given branch name (if any, otherwise we resolve depending on runtime,
- * see @link resolveBranchName) is the main branch, false otherwise
- * @throws Throws an error when this method is called locally without override flag to prevent from accidential execution
- * on main branch
- * @link resolveBranchName
- */
-function isMainBranch(branchName) {
-    return exports.REGEX_MAIN.test(branchName);
-}
-exports.isMainBranch = isMainBranch;
-/**
- * @return Returns an object containing branchId and branchName
- * @throws Throws an error if given branchName does not match our convention
- */
-function parseBranchName(branchName) {
-    const matches = branchName.match(exports.REGEX_BRANCH_NAME);
-    if (matches) {
-        // [0] full match / [1] branch id / [2] branch name
-        const [, branchId, branchN] = matches;
-        return {
-            branchId: parseInt(branchId, 10),
-            branchName: branchN,
-        };
-    }
-    else {
-        throw new Error(`given branch name ${branchName} does not match our convention #<one or more digit>-<branch-name-with-kebap-case>`);
-    }
-}
-exports.parseBranchName = parseBranchName;
-/**
- * Determine if stage is production (master | main) or not.
- *
- * @param stageName the stage to evaluate
- * @return returns true if the stage is 'master' or 'main', false if not
- */
-function isProduction(stageName) {
-    return exports.REGEX_MASTER.test(stageName) || exports.REGEX_MAIN.test(stageName);
-}
-exports.isProduction = isProduction;
-/**
- * Determine if stage is a pull request.
- *
- * @param stageName the stage to evaluate
- * @return true if it's a pull request, false if not
- */
-function isPullRequest(stageName) {
-    return stageName.startsWith('pr');
-}
-exports.isPullRequest = isPullRequest;
-function isDevStage(stageName) {
-    return stageName.startsWith('xx');
-}
-function isScOverrideActive(env) {
-    return typeof env === 'object' && env !== null && env.SC_OVERRIDE === 'true';
-}
-exports.isScOverrideActive = isScOverrideActive;
-//# sourceMappingURL=base.utils.js.map
-
-/***/ }),
-
-/***/ 55513:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.gitBranchName = exports.gitSwitchBranch = void 0;
-const helpers_1 = __nccwpck_require__(12268);
-/**
- * Will update remote settings to fetch repo and then switch to given branch.
- * @return Returns the current commit SHA
- */
-function gitSwitchBranch(githubToken, repository, branchName) {
-    git('config', 'remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"');
-    git('remote', `set-url origin https://${githubToken}@github.com/${repository}.git`);
-    git('fetch');
-    git('checkout', `-b "${branchName}" "origin/${branchName}" --`);
-    // return current commit sha
-    return (0, helpers_1.execReturn)(`git log -1 --pretty=format:'%H'`);
-}
-exports.gitSwitchBranch = gitSwitchBranch;
-function gitBranchName() {
-    return gitReturn('symbolic-ref', '--short', '-q HEAD');
-}
-exports.gitBranchName = gitBranchName;
-function git(command, ...args) {
-    (0, helpers_1.exec)(`git ${command} ${args.join(' ')}`);
-}
-function gitReturn(command, ...args) {
-    return (0, helpers_1.execReturn)(`git ${command} ${args.join(' ')}`);
-}
-//# sourceMappingURL=git.utils.js.map
-
-/***/ }),
-
-/***/ 56836:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getGhToken = exports.getGithubBranchName = exports.isGithubPullRequest = exports.hasGithubContext = exports.isGithubWorkflow = void 0;
-/**
- *  checks if running inside a gitHub workflow
- */
-function isGithubWorkflow(envVars) {
-    return typeof envVars === 'object' && envVars !== null && envVars.GITHUB_ACTIONS === 'true';
-}
-exports.isGithubWorkflow = isGithubWorkflow;
-/**
- *  checks whether GITHUB_CONTEXT exists on given env.
- */
-function hasGithubContext(envVars) {
-    return envVars !== null && typeof envVars.GITHUB_CONTEXT === 'string';
-}
-exports.hasGithubContext = hasGithubContext;
-/**
- *  checks env if running on a Pull Request
- */
-function isGithubPullRequest(env) {
-    return env.GITHUB_EVENT_NAME === 'pull_request';
-}
-exports.isGithubPullRequest = isGithubPullRequest;
-/**
- * returns the branch name from github action env
- */
-function getGithubBranchName(env) {
-    if (isGithubPullRequest(env)) {
-        if (env.GITHUB_HEAD_REF) {
-            return env.GITHUB_HEAD_REF;
-        }
-        throw new Error('env var GITHUB_HEAD_REF must be defined');
-    }
-    else {
-        if (hasGithubContext(env)) {
-            const ctx = JSON.parse(env.GITHUB_CONTEXT);
-            // tslint:disable-next-line:no-non-null-assertion
-            return ctx.ref.replace('refs/heads/', '');
-        }
-        throw new Error(`env var GITHUB_CONTEXT must be defined`);
-    }
-}
-exports.getGithubBranchName = getGithubBranchName;
-/**
- * returns token from env var GH_TOKEN or throws when not available
- */
-function getGhToken(env) {
-    if (typeof env === 'object' && env !== null && hasGhToken(env)) {
-        return env.GH_TOKEN;
-    }
-    throw new Error('no GH_TOKEN found in env');
-}
-exports.getGhToken = getGhToken;
-function hasGhToken(x) {
-    return 'GH_TOKEN' in x && typeof x['GH_TOKEN'] === 'string';
-}
-//# sourceMappingURL=github.utils.js.map
-
-/***/ }),
-
-/***/ 12268:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.execReturn = exports.exec = void 0;
-// tslint:disable:no-console
-const child_process_1 = __nccwpck_require__(32081);
-/**
- * executes a command using child_process
- * defining 'inherit' as stdio, which prints to the console and ignores the output
- */
-function exec(command) {
-    console.log(`>>> ${command}`);
-    (0, child_process_1.execSync)(command, { encoding: 'utf8', stdio: 'inherit' });
-}
-exports.exec = exec;
-/**
- * executes a command using child_process and returns the output
- */
-function execReturn(command) {
-    console.log(`>>> ${command}`);
-    return (0, child_process_1.execSync)(command, { encoding: 'utf8' }).trim();
-}
-exports.execReturn = execReturn;
-//# sourceMappingURL=helpers.js.map
-
-/***/ }),
-
-/***/ 48310:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-//# sourceMappingURL=github-action-env.type.js.map
-
-/***/ }),
-
-/***/ 82046:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-//# sourceMappingURL=github-context.type.js.map
-
-/***/ }),
-
-/***/ 90542:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const tslib_1 = __nccwpck_require__(4351);
-(0, tslib_1.__exportStar)(__nccwpck_require__(48310), exports);
-(0, tslib_1.__exportStar)(__nccwpck_require__(82046), exports);
-//# sourceMappingURL=index.js.map
-
-/***/ }),
-
 /***/ 83682:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -45784,14 +45459,6 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 41295:
-/***/ ((module) => {
-
-module.exports = eval("require")("@aws-sdk/client-cloudformation/dist-types/waiters/waitForStackDeleteComplete.js");
-
-
-/***/ }),
-
 /***/ 87578:
 /***/ ((module) => {
 
@@ -46110,10 +45777,7 @@ var github = __nccwpck_require__(95438);
 const promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:timers/promises");
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/client-cloudformation/dist-cjs/index.js
 var dist_cjs = __nccwpck_require__(15650);
-// EXTERNAL MODULE: ./node_modules/@vercel/ncc/dist/ncc/@@notfound.js?@aws-sdk/client-cloudformation/dist-types/waiters/waitForStackDeleteComplete.js
-var waitForStackDeleteComplete = __nccwpck_require__(41295);
 ;// CONCATENATED MODULE: ./src/stack-helper.ts
-
 
 
 
@@ -46156,7 +45820,7 @@ class StackHelper {
     async deleteStack(stackName, waitForDeleteComplete = false) {
         await this.cfn.deleteStack({ StackName: stackName });
         if (waitForDeleteComplete) {
-            await (0,waitForStackDeleteComplete.waitUntilStackDeleteComplete)({ client: this.cfn, maxWaitTime: MAX_WAIT_TIME_SEC }, { StackName: stackName });
+            await (0,dist_cjs.waitUntilStackDeleteComplete)({ client: this.cfn, maxWaitTime: MAX_WAIT_TIME_SEC }, { StackName: stackName });
         }
     }
     async describeStack(stackName) {
@@ -46185,8 +45849,143 @@ class StackHelper {
     }
 }
 
-// EXTERNAL MODULE: ./node_modules/@shiftcode/branch-utilities/_cjs/index.js
-var _cjs = __nccwpck_require__(70066);
+;// CONCATENATED MODULE: ./node_modules/@shiftcode/branch-utilities/lib/base.utils.js
+
+
+/** regex to match the master branch */
+const REGEX_MASTER = /^master$/;
+/** regex to match the main branch */
+const REGEX_MAIN = /^main$/;
+/** regex to match our branch conventions with the following capture groups: fullMatch / branch id / branch name */
+const REGEX_BRANCH_NAME = /^[a-z]*\/?#(\d+)-(.*)/;
+/**
+ * create the {@link StageInfo} object from given stage
+ * @param stage the name either matching xx\d+ , pr\d+ or master|main
+ */
+function createStageInfo(stage) {
+    const isPr = isPullRequest(stage);
+    const isXx = isDevStage('xx');
+    const isProd = isProduction(stage);
+    if (!isPr && !isXx && !isProd) {
+        throw new Error('The provided stage neither is xx nor pr nor master/main.');
+    }
+    return { stage, isProd, isPr };
+}
+/**
+ * @param env process.env
+ * @return Returns the branch info containing the stage which is defined as xx|pr<branchId> or 'master' / 'main'
+ * @throws if master | main branch is used locally without override flag
+ */
+function getBranchInfo(env, branchName) {
+    let isPr = false;
+    if (isGithubWorkflow(env)) {
+        // github workflow environment
+        branchName = branchName !== null && branchName !== void 0 ? branchName : getGithubBranchName(env);
+        isPr = isGithubPullRequest(env);
+    }
+    else {
+        // local environment
+        branchName = branchName !== null && branchName !== void 0 ? branchName : gitBranchName();
+    }
+    if (isMasterBranch(branchName) || isMainBranch(branchName)) {
+        if (!isGithubWorkflow(env) && !isScOverrideActive(env)) {
+            throw new Error(`prod (master or main) branch can't be used locally`);
+        }
+        return {
+            branchName,
+            isProd: true,
+            isPr: false,
+            stage: branchName,
+            name: branchName,
+        };
+    }
+    else {
+        const { branchId, branchName: name } = parseBranchName(branchName);
+        return {
+            branchName,
+            isProd: false,
+            isPr,
+            stage: isPr ? `pr${branchId}` : `xx${branchId}`,
+            name,
+        };
+    }
+}
+/**
+ * @return Returns the branch name. The name is resolved depending on provided environment (github actions | local).
+ */
+function resolveBranchName(env) {
+    if (isGithubWorkflow(env)) {
+        // github workflow environment
+        return getGithubBranchName(env);
+    }
+    else {
+        // local environment
+        return gitBranchName();
+    }
+}
+/**
+ * @return Returns true if the given branch name (if any, otherwise we resolve depending on runtime,
+ * see @link resolveBranchName) is the master branch, false otherwise
+ * @throws Throws an error when this method is called locally without override flag to prevent from accidential execution
+ * on master branch
+ * @link resolveBranchName
+ */
+function isMasterBranch(branchName) {
+    return REGEX_MASTER.test(branchName);
+}
+/**
+ * @return Returns true if the given branch name (if any, otherwise we resolve depending on runtime,
+ * see @link resolveBranchName) is the main branch, false otherwise
+ * @throws Throws an error when this method is called locally without override flag to prevent from accidential execution
+ * on main branch
+ * @link resolveBranchName
+ */
+function isMainBranch(branchName) {
+    return REGEX_MAIN.test(branchName);
+}
+/**
+ * @return Returns an object containing branchId and branchName
+ * @throws Throws an error if given branchName does not match our convention
+ */
+function parseBranchName(branchName) {
+    const matches = branchName.match(REGEX_BRANCH_NAME);
+    if (matches) {
+        // [0] full match / [1] branch id / [2] branch name
+        const [, branchId, branchN] = matches;
+        return {
+            branchId: parseInt(branchId, 10),
+            branchName: branchN,
+        };
+    }
+    else {
+        throw new Error(`given branch name ${branchName} does not match our convention #<one or more digit>-<branch-name-with-kebap-case>`);
+    }
+}
+/**
+ * Determine if stage is production (master | main) or not.
+ *
+ * @param stageName the stage to evaluate
+ * @return returns true if the stage is 'master' or 'main', false if not
+ */
+function isProduction(stageName) {
+    return REGEX_MASTER.test(stageName) || REGEX_MAIN.test(stageName);
+}
+/**
+ * Determine if stage is a pull request.
+ *
+ * @param stageName the stage to evaluate
+ * @return true if it's a pull request, false if not
+ */
+function isPullRequest(stageName) {
+    return stageName.startsWith('pr');
+}
+function isDevStage(stageName) {
+    return stageName.startsWith('xx');
+}
+function isScOverrideActive(env) {
+    return typeof env === 'object' && env !== null && env.SC_OVERRIDE === 'true';
+}
+//# sourceMappingURL=base.utils.js.map
 ;// CONCATENATED MODULE: ./src/index.ts
 
 
@@ -46202,7 +46001,7 @@ async function run() {
         }
         core.info(`#### check here (github.context.payload.ref): ${github.context.payload.ref}`);
         const ref = github.context.payload.ref;
-        if ((0,_cjs.isMasterBranch)(ref)) {
+        if (isMasterBranch(ref)) {
             core.info(`detected master branch -- cancel action`);
             core.setOutput('deletedStacks', []);
             return;
@@ -46213,7 +46012,7 @@ async function run() {
             core.setOutput('deletedStacks', []);
             return;
         }
-        const branch = (0,_cjs.parseBranchName)(ref.replace(/^(.+\/)?/, ''));
+        const branch = parseBranchName(ref.replace(/^(.+\/)?/, ''));
         const xxSuffix = `xx${branch.branchId}`;
         const prSuffix = `pr${branch.branchId}`;
         core.info(`provided stack name prefix: ${stackNamePrefix}`);

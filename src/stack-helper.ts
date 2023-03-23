@@ -5,10 +5,8 @@ import {
     Stack,
     StackStatus,
     StackSummary,
-} from "@aws-sdk/client-cloudformation";
-import {
     waitUntilStackDeleteComplete
-} from "@aws-sdk/client-cloudformation/dist-types/waiters/waitForStackDeleteComplete.js";
+} from "@aws-sdk/client-cloudformation";
 
 const COMPLETED_STATI: StackStatus[] = [
     StackStatus.CREATE_COMPLETE,
