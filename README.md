@@ -36,7 +36,7 @@ Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=t
     waitForDeleteComplete: true
     ignoreBranches: '["master", "#001-dev"]'
 ```
-###Hints
+### Hints
 - if there are stacks in multiple regions: use both actions two times with their corresponding region.
 - if working with `assumedRoles` and [`aws-actions/configure-aws-credentials@v1`](https://github.com/aws-actions/configure-aws-credentials) the policy statement for the static iam user needs to have the actions `"sts:AssumeRole` AND `sts:TagSession` allowed on the role to assume. The Trust relationship of the assumed role needs to allow those actions for the assuming user. 
 
