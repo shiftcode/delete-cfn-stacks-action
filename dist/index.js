@@ -33856,6 +33856,7 @@ const COMPLETED_STATI = [
     'IMPORT_COMPLETE',
 ];
 class StackHelper {
+    cfn;
     constructor(cfn) {
         this.cfn = cfn || new cloudformation_1.default();
     }
