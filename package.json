@@ -1,11 +1,12 @@
 {
   "name": "delete-cfn-stacks-action",
-  "version": "0.0.1",
+  "version": "1.0.1",
   "description": "github workflow action to delete aws CloudFormation stacks",
   "main": "dist/index.js",
   "repository": "https://github.com/shiftcode/delete-cfn-stacks-action.git",
   "author": "Simon Mumenthaler <simon.mumenthaler@shiftcode.ch>",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "ncc build ./src/index.ts -o ./dist",
     "build:watch": "ncc build ./src/index.ts -o ./dist --watch",
@@ -17,9 +18,9 @@
   "dependencies": {
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.1",
-    "@shiftcode/branch-utilities": "^1.0.0",
-    "aws-sdk": "^2.876.0",
-    "tslib": "^2.1.0"
+    "@shiftcode/branch-utilities": "^2.0.1",
+    "@aws-sdk/client-cloudformation": "^3.297.0",
+    "tslib": "^2.5.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.5.0",

@@ -1,11 +1,10 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { StackHelper } from './stack-helper'
+import { StackHelper } from './stack-helper.js'
 import { isMasterBranch, parseBranchName } from '@shiftcode/branch-utilities'
 
 export async function run() {
   try {
-    console.debug('github', github.context)
     // reading the inputs (inputs defined in action.yml)
     const waitForDeleteComplete = core.getInput('waitForDeleteComplete', { required: true }) === 'true'
     const stackNamePrefix = core.getInput('stackNamePrefix', { required: true })
@@ -19,16 +18,19 @@ export async function run() {
       )
     }
 
+    // TODO does the payload.ref exists?
+    core.info(`#### check here (github.context.payload.ref): ${github.context.payload.ref}`)
     const ref = github.context.payload.ref
 
     if (isMasterBranch(ref)) {
-      console.info(`detected master branch -- cancel action`)
+      core.info(`detected master branch -- cancel action`)
       core.setOutput('deletedStacks', [])
       return
     }
+    
     if (ignoreBranches.includes(ref)) {
-      console.info(`branch '${github.context.payload.ref}' was defined to ignore.`)
-      console.info(`cancel action`)
+      core.info(`branch '${github.context.payload.ref}' was defined to ignore.`)
+      core.info(`cancel action`)
       core.setOutput('deletedStacks', [])
       return
     }
@@ -37,8 +39,8 @@ export async function run() {
     const xxSuffix = `xx${branch.branchId}`
     const prSuffix = `pr${branch.branchId}`
 
-    console.log(`provided stack name prefix: ${stackNamePrefix}`)
-    console.log(`stage as stack name suffix: ${xxSuffix}|${prSuffix}`)
+    core.info(`provided stack name prefix: ${stackNamePrefix}`)
+    core.info(`stage as stack name suffix: ${xxSuffix}|${prSuffix}`)
 
     const stackHelper = new StackHelper()
 
@@ -48,7 +50,7 @@ export async function run() {
     const prStacks = stacks.filter((stackName) => stackName.endsWith(prSuffix))
 
     if (!xxStacks.length && !prStacks.length) {
-      console.info('No Stacks to delete')
+      core.info('No Stacks to delete')
     } else {
       await Promise.all([
         stackHelper.deleteStacks(xxStacks, waitForDeleteComplete),
