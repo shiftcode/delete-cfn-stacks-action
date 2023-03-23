@@ -33251,7 +33251,11 @@ function wrappy (fn, cb) {
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -33284,7 +33288,7 @@ async function run() {
             throw new Error(`action input 'ignoreBranches' needs to be a json array. provided value '${core.getInput('ignoreBranches')}' could not be parsed`);
         }
         const ref = github.context.payload.ref;
-        if (branch_utils_1.isMasterBranch(ref)) {
+        if ((0, branch_utils_1.isMasterBranch)(ref)) {
             console.info(`detected master branch -- cancel action`);
             core.setOutput('deletedStacks', []);
             return;
@@ -33295,7 +33299,7 @@ async function run() {
             core.setOutput('deletedStacks', []);
             return;
         }
-        const branch = branch_utils_1.parseBranchName(ref.replace(/^(.+\/)?/, ''));
+        const branch = (0, branch_utils_1.parseBranchName)(ref.replace(/^(.+\/)?/, ''));
         const xxSuffix = `xx${branch.branchId}`;
         const prSuffix = `pr${branch.branchId}`;
         console.log(`provided stack name prefix: ${stackNamePrefix}`);
@@ -33395,7 +33399,7 @@ class StackHelper {
                     if (first) {
                         console.info(`${stack.StackName}: ${stack.StackStatus}`);
                     }
-                    return timeout_async_1.timeoutAsync(15)
+                    return (0, timeout_async_1.timeoutAsync)(15)
                         .then(() => this.getStackUpdateUntilDeleted(stack.StackName, false));
                 default:
                     throw new Error(`StackStatus of ${stack.StackName} is ${stack.StackStatus} (${stack.StackStatusReason})`);
