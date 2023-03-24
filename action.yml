@@ -13,9 +13,6 @@ inputs:
     description: 'provide a list of branches to ignore (JSON array)'
     required: true
     default: '[]'
-outputs:
-  deletedStacks:
-    description: 'The stacks that were deleted (array of names)'
 runs:
   using: 'node16'
   main: 'dist/index.js'

@@ -44,13 +44,12 @@ export class StackHelper {
         return stacks
     }
 
-    async deleteStacks(stackNames: string[], waitForDeleteComplete: boolean = false): Promise<void> {
+    async deleteStacks(stackNames: string[], waitForDeleteComplete = false): Promise<void> {
         if (stackNames.length === 0) {
             return
         }
         
-        core.info(`delete stacks: ${stackNames}`)
-        core.info(`waitForDeleteComplete: ${waitForDeleteComplete}`)
+        core.info(`delete stacks: ${stackNames} (waitForDeleteComplete: ${waitForDeleteComplete})`)
         await Promise.all(stackNames.map((s) => this.deleteStack(s, waitForDeleteComplete)))
     }
 
@@ -68,8 +67,7 @@ export class StackHelper {
         return stack.Stacks.find((s) => s.StackName === stackName)
     }
 
-    // the value is used
-    // @ts-ignore
+    // @ts-ignore disable unused, since it is used in recursion
     private async getStackUpdateUntilDeleted(stackName: string, first = true): Promise<boolean> {
         const stack = await this.describeStack(stackName)
         switch (stack?.StackStatus) {
