@@ -3,7 +3,9 @@
 ![version](https://img.shields.io/github/tag/shiftcode/delete-cfn-stacks-action?label=version)
 
 
-This action deletes all cloudformation xx/pr stacks in the provided region with the given name prefix + the stage suffix. The stage is transformed from the branch name (eg. `#85-my-feature` > `xx85` / `pr85`). `master` branch is always ignored.
+This action deletes all cloudformation xx/pr stacks in the provided region with the given name prefix + the stage suffix. 
+The stage is transformed from the branch name (eg. `#85-my-feature` > `xx85` / `pr85`). Production branch (`master` | `main`) branch 
+is always ignored.
 
 Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=true also autoDeleteItems, etc.)
 
@@ -17,7 +19,8 @@ Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=t
 **Optional** `boolean` Whether the action should wait until the stack is completely deleted (status=`DELETE_COMPLETE`).
 
 #### `ignoreBranches`
-**Optional** `JSON String Array` branches to ignore (early exit, necessary since on-delete workflows do not support branch restrictions). `master` branch is always ignored.
+**Optional** `JSON String Array` branches to ignore (early exit, necessary since on-delete workflows do not support branch restrictions). 
+Production branches (`master` | `main`) branch is always ignored.
 
 
 ### Example workflow step config
