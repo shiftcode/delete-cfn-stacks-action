@@ -45481,7 +45481,7 @@ try {
         throw new Error(`action input 'ignoreBranches' needs to be a json array. provided value '${_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('ignoreBranches')}' could not be parsed`);
     }
     const branchName = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.ref;
-    if ((0,_shiftcode_branch_utilities__WEBPACK_IMPORTED_MODULE_3__/* .isMasterBranch */ .X2)(branchName)) {
+    if ((0,_shiftcode_branch_utilities__WEBPACK_IMPORTED_MODULE_3__/* .isMasterBranch */ .X2)(branchName) || (0,_shiftcode_branch_utilities__WEBPACK_IMPORTED_MODULE_3__/* .isMainBranch */ .tj)(branchName)) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.notice(`detected master branch --> stopping here`);
     }
     else if (ignoreBranches.includes(branchName)) {
@@ -45759,9 +45759,10 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("zlib");
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "J5": () => (/* binding */ parseBranchName),
-/* harmony export */   "X2": () => (/* binding */ isMasterBranch)
+/* harmony export */   "X2": () => (/* binding */ isMasterBranch),
+/* harmony export */   "tj": () => (/* binding */ isMainBranch)
 /* harmony export */ });
-/* unused harmony exports REGEX_MASTER, REGEX_MAIN, REGEX_BRANCH_NAME, createStageInfo, getBranchInfo, resolveBranchName, isMainBranch, isProduction, isPullRequest, isScOverrideActive */
+/* unused harmony exports REGEX_MASTER, REGEX_MAIN, REGEX_BRANCH_NAME, createStageInfo, getBranchInfo, resolveBranchName, isProduction, isPullRequest, isScOverrideActive */
 
 
 /** regex to match the master branch */

@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {StackHelper} from './stack-helper.js'
-import {isMasterBranch, parseBranchName} from '@shiftcode/branch-utilities'
+import {isMainBranch, isMasterBranch, parseBranchName} from '@shiftcode/branch-utilities'
 
 try {
     // reading the inputs (inputs defined in action.yml)
@@ -20,7 +20,7 @@ try {
     // this is defined, although the payload.ref is not typed, it contains the branch name
     const branchName = github.context.payload.ref
 
-    if (isMasterBranch(branchName)) {
+    if (isMasterBranch(branchName) || isMainBranch(branchName)) {
         core.notice(`detected master branch --> stopping here`)
     }else if (ignoreBranches.includes(branchName)) {
         core.notice(`branch '${github.context.payload.ref}' was defined to ignore --> stopping here`)
