@@ -23,10 +23,8 @@ Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=t
 ### Example workflow step config
 ```
 - name: Configure AWS Credentials
-  uses: aws-actions/configure-aws-credentials@v1
+  uses: aws-actions/configure-aws-credentials@v4
   with:
-    aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     role-to-assume: 'arn:aws:iam::{ACCOUNT_ID}:role/{ROLE_NAME}'
     aws-region: eu-central-1
 - name: Delete Stacks
@@ -34,11 +32,13 @@ Make sure your CloudFormation Stacks are fully deletable (if autoDeleteBuckets=t
   with:
     stackNamePrefix: 'ch-website'
     waitForDeleteComplete: true
-    ignoreBranches: '["master", "#001-dev"]'
+    # master & main are ignored by default
+    ignoreBranches: '["#1-dev"]'
 ```
 ### Hints
-- if there are stacks in multiple regions: use both actions two times with their corresponding region.
-- if working with `assumedRoles` and [`aws-actions/configure-aws-credentials@v1`](https://github.com/aws-actions/configure-aws-credentials) the policy statement for the static iam user needs to have the actions `"sts:AssumeRole` AND `sts:TagSession` allowed on the role to assume. The Trust relationship of the assumed role needs to allow those actions for the assuming user. 
+- If there are stacks in multiple regions: use both actions two times with their corresponding region.
+- If working with `assumedRoles` and [`aws-actions/configure-aws-credentials@v1`](https://github.com/aws-actions/configure-aws-credentials) the policy statement for the static iam user needs to have the actions `"sts:AssumeRole` AND `sts:TagSession` allowed on the role to assume. 
+The Trust relationship of the assumed role needs to allow those actions for the assuming user. 
 
 ## Development
 ### testing

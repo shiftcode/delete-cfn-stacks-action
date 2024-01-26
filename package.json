@@ -18,16 +18,16 @@
   },
   "dependencies": {
     "@actions/core": "^1.10.0",
-    "@actions/github": "^5.1.1",
+    "@actions/github": "^6.0.0",
     "@shiftcode/branch-utilities": "^2.0.1",
-    "@aws-sdk/client-cloudformation": "^3.297.0",
+    "@aws-sdk/client-cloudformation": "^3.499.0",
     "tslib": "^2.5.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.5.0",
     "@commitlint/config-conventional": "^17.4.4",
     "@commitlint/prompt-cli": "^17.5.0",
-    "@types/node": "^16.18.19",
+    "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^5.56.0",
     "@typescript-eslint/parser": "^5.56.0",
     "@vercel/ncc": "^0.36.1",
@@ -37,6 +37,6 @@
     "typescript": "^5.0.2"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=20.11.0"
   }
 }
