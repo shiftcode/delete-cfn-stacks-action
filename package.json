@@ -11,10 +11,10 @@
     "build": "ncc build ./src/index.ts -o ./dist",
     "build:watch": "ncc build ./src/index.ts -o ./dist --watch",
     "lint": "eslint --fix src/*.ts",
-    "precommit": "npm run lint && npm run build && git add dist/index.js",
-    "prettier": "prettier --write src/*.ts",
-    "prepare": "husky install",
-    "run:local": "npm run build && INPUT_STACKNAMEPREFIX='bag-covid19' node ./dist/index.js" 
+    "precommit": "npm run lint && npm run format && npm run build && git add dist/index.js",
+    "format": "prettier --write src/*.ts",
+    "prepare": "husky",
+    "run:local": "npm run build && INPUT_STACKNAMEPREFIX='bag-covid19' node ./dist/index.js"
   },
   "dependencies": {
     "@actions/core": "^1.10.0",
@@ -24,17 +24,17 @@
     "tslib": "^2.5.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^17.5.0",
-    "@commitlint/config-conventional": "^17.4.4",
-    "@commitlint/prompt-cli": "^17.5.0",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@commitlint/prompt-cli": "^19.8.1",
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^5.56.0",
     "@typescript-eslint/parser": "^5.56.0",
-    "@vercel/ncc": "^0.36.1",
+    "@vercel/ncc": "^0.38.3",
     "eslint": "^8.36.0",
-    "husky": "^8.0.0",
-    "prettier": "^2.8.6",
-    "typescript": "^5.0.2"
+    "husky": "^9.1.7",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2"
   },
   "engines": {
     "node": ">=20.11.0"
