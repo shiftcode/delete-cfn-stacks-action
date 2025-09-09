@@ -65964,15 +65964,24 @@ module.exports = parseParams
 /* harmony export */   nM: () => (/* binding */ isMasterBranch),
 /* harmony export */   pD: () => (/* binding */ parseBranchName)
 /* harmony export */ });
-/* unused harmony exports REGEX_MASTER, REGEX_MAIN, REGEX_BRANCH_NAME, createStageInfo, getBranchInfo, resolveBranchName, isProduction, isPullRequest, isScOverrideActive */
+/* unused harmony exports REGEX_MASTER, REGEX_MAIN, createStageInfo, getBranchInfo, isFullBranchOverrideDefined, getBranchNameOverride, getIsPrOverride, resolveBranchName, isProduction, isPullRequest, isScOverrideActive */
 
 
 /** regex to match the master branch */
 const REGEX_MASTER = /^master$/;
 /** regex to match the main branch */
 const REGEX_MAIN = /^main$/;
-/** regex to match our branch conventions with the following capture groups: fullMatch / branch id / branch name */
-const REGEX_BRANCH_NAME = /^[a-z]*\/?#(\d+)-(.*)/;
+/**
+ * regex to match our branch conventions with the following named capture groups: id, name
+ * @example #123-my-feature ->  { id:  '123',  name: 'my-feature' }
+ * @example feature/#456-yanr -> { id:  '456',  name: 'yanr' }
+ */
+const REGEX_BRANCH_NAME_DEFAULT = /^[a-z]*\/?#(?<id>\d+)-(?<name>.*)$/;
+/**
+ * regex to match the branch convention github copilot uses with the following named capture groups: id, name
+ * @example copilot/fix-789 -> { id:  '789',  name: 'fix' }
+ */
+const REGEX_BRANCH_NAME_COPILOT = /^copilot\/(?<name>.*)-(?<id>\d+)$/;
 /**
  * create the {@link StageInfo} object from given stage
  * @param stage the name either matching xx\d+ , pr\d+ or master|main
@@ -65993,14 +66002,19 @@ function createStageInfo(stage) {
  */
 function getBranchInfo(env, branchName) {
     let isPr = false;
-    if (isGithubWorkflow(env)) {
+    if (isFullBranchOverrideDefined(env)) {
+        // full branch name override via env vars SC_OVERRIDE_BRANCH_NAME and SC_OVERRIDE_IS_PR
+        branchName = getBranchNameOverride(env);
+        isPr = getIsPrOverride(env);
+    }
+    else if (isGithubWorkflow(env)) {
         // github workflow environment
-        branchName = branchName !== null && branchName !== void 0 ? branchName : getGithubBranchName(env);
+        branchName = branchName ?? getGithubBranchName(env);
         isPr = isGithubPullRequest(env);
     }
     else {
         // local environment
-        branchName = branchName !== null && branchName !== void 0 ? branchName : gitBranchName();
+        branchName = branchName ?? gitBranchName();
     }
     if (isMasterBranch(branchName) || isMainBranch(branchName)) {
         if (!isGithubWorkflow(env) && !isScOverrideActive(env)) {
@@ -66024,6 +66038,17 @@ function getBranchInfo(env, branchName) {
             name,
         };
     }
+}
+function isFullBranchOverrideDefined(envVars) {
+    return (envVars !== null &&
+        typeof envVars.SC_OVERRIDE_BRANCH_NAME === 'string' &&
+        typeof envVars.SC_OVERRIDE_IS_PR === 'string');
+}
+function getBranchNameOverride(env) {
+    return env.SC_OVERRIDE_BRANCH_NAME;
+}
+function getIsPrOverride(env) {
+    return env.SC_OVERRIDE_IS_PR === 'true';
 }
 /**
  * @return Returns the branch name. The name is resolved depending on provided environment (github actions | local).
@@ -66063,13 +66088,11 @@ function isMainBranch(branchName) {
  * @throws Throws an error if given branchName does not match our convention
  */
 function parseBranchName(branchName) {
-    const matches = branchName.match(REGEX_BRANCH_NAME);
-    if (matches) {
-        // [0] full match / [1] branch id / [2] branch name
-        const [, branchId, branchN] = matches;
+    const matches = REGEX_BRANCH_NAME_DEFAULT.exec(branchName) ?? REGEX_BRANCH_NAME_COPILOT.exec(branchName);
+    if (matches?.groups) {
         return {
-            branchId: parseInt(branchId, 10),
-            branchName: branchN,
+            branchId: parseInt(matches.groups['id'], 10),
+            branchName: matches.groups['name'],
         };
     }
     else {
@@ -66083,7 +66106,7 @@ function parseBranchName(branchName) {
  * @return returns true if the stage is 'master' or 'main', false if not
  */
 function isProduction(stageName) {
-    return REGEX_MASTER.test(stageName) || REGEX_MAIN.test(stageName);
+    return REGEX_MASTER.test(stageName) ?? REGEX_MAIN.test(stageName);
 }
 /**
  * Determine if stage is a pull request.
