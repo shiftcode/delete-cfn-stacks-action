@@ -63996,7 +63996,7 @@ try {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.notice(`branch '${_actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.ref}' was defined to ignore --> stopping here`);
     }
     else {
-        const branch = (0,_shiftcode_branch_utilities__WEBPACK_IMPORTED_MODULE_3__/* .parseBranchName */ .pD)(branchName.replace(/^(.+\/)?/, ''));
+        const branch = (0,_shiftcode_branch_utilities__WEBPACK_IMPORTED_MODULE_3__/* .parseBranchName */ .pD)(branchName);
         const xxSuffix = `xx${branch.branchId}`;
         const prSuffix = `pr${branch.branchId}`;
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`stack name  ${stackNamePrefix}-(${xxSuffix}|${prSuffix})`);

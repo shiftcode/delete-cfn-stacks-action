@@ -25,7 +25,7 @@ try {
   } else if (ignoreBranches.includes(branchName)) {
     core.notice(`branch '${github.context.payload.ref}' was defined to ignore --> stopping here`)
   } else {
-    const branch = parseBranchName(branchName.replace(/^(.+\/)?/, ''))
+    const branch = parseBranchName(branchName)
     const xxSuffix = `xx${branch.branchId}`
     const prSuffix = `pr${branch.branchId}`
 
