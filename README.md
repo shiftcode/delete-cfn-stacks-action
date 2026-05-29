@@ -26,7 +26,7 @@ Production branches (`master` | `main`) branch is always ignored.
 ### Example workflow step config
 ```
 - name: Configure AWS Credentials
-  uses: aws-actions/configure-aws-credentials@v4
+  uses: aws-actions/configure-aws-credentials@<latest-version>
   with:
     role-to-assume: 'arn:aws:iam::{ACCOUNT_ID}:role/{ROLE_NAME}'
     aws-region: eu-central-1
